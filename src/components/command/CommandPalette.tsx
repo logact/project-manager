@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, LayoutGrid, List, FolderKanban, CircleDot, Command } from 'lucide-react'
+import { Search, Plus, LayoutGrid, List, FolderKanban, CircleDot } from 'lucide-react'
 import { useIssuesByTeam } from '../../hooks/useIssues'
 import { useTeams } from '../../hooks/useTeams'
 import { useProjects } from '../../hooks/useProjects'
 import { cn } from '../../lib/utils'
-import type { Issue } from '../../types'
 
 interface CommandItem {
   id: string

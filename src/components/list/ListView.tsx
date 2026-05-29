@@ -16,9 +16,10 @@ interface ListViewProps {
   teamId?: string
   projectId?: string
   title?: string
+  activeOnly?: boolean
 }
 
-export default function ListView({ teamId: propTeamId, projectId: propProjectId, title: propTitle }: ListViewProps) {
+export default function ListView({ teamId: propTeamId, projectId: propProjectId, title: propTitle, activeOnly }: ListViewProps) {
   const params = useParams()
   const navigate = useNavigate()
   const teamId = propTeamId || params.teamId || ''
@@ -50,7 +51,10 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
   }, [])
 
   const filteredIssues = useMemo(() => {
-    let result = projectId ? issues.filter((i) => i.projectId === projectId) : issues
+    let result = projectId ? issues.filter((i) => i.projectId === projectId) : [...issues]
+    if (activeOnly) {
+      result = result.filter((i) => i.state !== 'done' && i.state !== 'canceled')
+    }
     return result.sort((a, b) => {
       let cmp = 0
       if (sortField === 'priority') {
@@ -61,7 +65,7 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
       }
       return sortDir === 'asc' ? -cmp : cmp
     })
-  }, [issues, projectId, sortField, sortDir])
+  }, [issues, projectId, sortField, sortDir, activeOnly])
 
   const toggleSort = (field: typeof sortField) => {
     if (sortField === field) {
