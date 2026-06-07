@@ -1,20 +1,34 @@
-import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '../db/schema'
-import { generateId } from '../lib/utils'
+import { useEffect, useState } from 'react'
 import type { Label } from '../types'
 
+const API_BASE = '/api'
+
 export function useLabels(teamId?: string) {
-  return useLiveQuery(
-    () =>
-      teamId
-        ? db.labels.where('teamId').equals(teamId).toArray()
-        : db.labels.toArray(),
-    [teamId]
-  ) ?? []
+  const [labels, setLabels] = useState<Label[]>([])
+
+  useEffect(() => {
+    const fetchLabels = async () => {
+      const url = teamId ? `${API_BASE}/labels?teamId=${teamId}` : `${API_BASE}/labels`
+      const res = await fetch(url)
+      if (res.ok) {
+        const data = await res.json()
+        setLabels(data)
+      }
+    }
+    fetchLabels()
+    const interval = setInterval(fetchLabels, 2000)
+    return () => clearInterval(interval)
+  }, [teamId])
+
+  return labels
 }
 
 export async function createLabel(data: Omit<Label, 'id' | 'createdAt'>) {
-  const label: Label = { ...data, id: generateId(), createdAt: Date.now() }
-  await db.labels.add(label)
-  return label
+  const res = await fetch(`${API_BASE}/labels`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error('Failed to create label')
+  return res.json()
 }

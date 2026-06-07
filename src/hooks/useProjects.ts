@@ -1,31 +1,63 @@
-import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '../db/schema'
-import { generateId } from '../lib/utils'
+import { useEffect, useState } from 'react'
 import type { Project } from '../types'
 
+const API_BASE = '/api'
+
 export function useProjects(teamId?: string) {
-  return useLiveQuery(
-    () =>
-      teamId
-        ? db.projects.where('teamId').equals(teamId).toArray()
-        : db.projects.toArray(),
-    [teamId]
-  ) ?? []
+  const [projects, setProjects] = useState<Project[]>([])
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      const url = teamId ? `${API_BASE}/projects?teamId=${teamId}` : `${API_BASE}/projects`
+      const res = await fetch(url)
+      if (res.ok) {
+        const data = await res.json()
+        setProjects(data)
+      }
+    }
+    fetchProjects()
+    const interval = setInterval(fetchProjects, 2000)
+    return () => clearInterval(interval)
+  }, [teamId])
+
+  return projects
 }
 
 export function useProject(id: string | undefined) {
-  return useLiveQuery(
-    () => (id ? db.projects.get(id) : undefined),
-    [id]
-  )
-}
+  const [project, setProject] = useState<Project | undefined>(undefined)
 
-export async function createProject(data: Omit<Project, 'id' | 'createdAt'>) {
-  const project: Project = { ...data, id: generateId(), createdAt: Date.now() }
-  await db.projects.add(project)
+  useEffect(() => {
+    if (!id) return
+    const fetchProject = async () => {
+      const res = await fetch(`${API_BASE}/projects/${id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setProject(data)
+      }
+    }
+    fetchProject()
+    const interval = setInterval(fetchProject, 2000)
+    return () => clearInterval(interval)
+  }, [id])
+
   return project
 }
 
+export async function createProject(data: Omit<Project, 'id' | 'createdAt'>) {
+  const res = await fetch(`${API_BASE}/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error('Failed to create project')
+  return res.json()
+}
+
 export async function updateProject(id: string, changes: Partial<Project>) {
-  await db.projects.update(id, changes)
+  const res = await fetch(`${API_BASE}/projects/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(changes),
+  })
+  if (!res.ok) throw new Error('Failed to update project')
 }

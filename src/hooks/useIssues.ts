@@ -1,86 +1,94 @@
-import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '../db/schema'
-import { generateId } from '../lib/utils'
+import { useEffect, useState, useCallback } from 'react'
 import type { Issue, IssueState } from '../types'
 
+const API_BASE = '/api'
+
 export function useIssues(filters?: { teamId?: string; state?: IssueState; projectId?: string; assigneeId?: string }) {
-  return useLiveQuery(async () => {
-    let collection = db.issues.toCollection()
+  const [issues, setIssues] = useState<Issue[]>([])
 
-    if (filters?.teamId) {
-      collection = db.issues.where({ teamId: filters.teamId, state: filters.state ?? 'backlog' })
-    }
-    if (filters?.projectId) {
-      collection = db.issues.where('projectId').equals(filters.projectId)
-    }
-    if (filters?.assigneeId) {
-      collection = db.issues.where('assigneeId').equals(filters.assigneeId)
-    }
-    if (filters?.state && !filters?.teamId) {
-      collection = db.issues.where('state').equals(filters.state)
-    }
+  const fetchIssues = useCallback(async () => {
+    const params = new URLSearchParams()
+    if (filters?.teamId) params.set('teamId', filters.teamId)
+    if (filters?.state) params.set('state', filters.state)
+    if (filters?.projectId) params.set('projectId', filters.projectId)
+    if (filters?.assigneeId) params.set('assigneeId', filters.assigneeId)
 
-    const results = await collection.toArray()
-    return results.sort((a, b) => b.updatedAt - a.updatedAt)
-  }, [filters?.teamId, filters?.state, filters?.projectId, filters?.assigneeId]) ?? []
+    const url = `${API_BASE}/issues${params.toString() ? '?' + params.toString() : ''}`
+    const res = await fetch(url)
+    if (res.ok) {
+      const data = await res.json()
+      setIssues(data)
+    }
+  }, [filters?.teamId, filters?.state, filters?.projectId, filters?.assigneeId])
+
+  useEffect(() => {
+    fetchIssues()
+    const interval = setInterval(fetchIssues, 2000)
+    return () => clearInterval(interval)
+  }, [fetchIssues])
+
+  return issues
 }
 
 export function useIssue(id: string | undefined) {
-  return useLiveQuery(
-    () => (id ? db.issues.get(id) : undefined),
-    [id]
-  )
-}
+  const [issue, setIssue] = useState<Issue | undefined>(undefined)
 
-export function useIssuesByTeam(teamId: string) {
-  return useLiveQuery(
-    async () => {
-      const issues = teamId
-        ? await db.issues.where('teamId').equals(teamId).toArray()
-        : await db.issues.toArray()
-      return issues.sort((a, b) => getPriorityIndex(b.priority) - getPriorityIndex(a.priority) || b.updatedAt - a.updatedAt)
-    },
-    [teamId]
-  ) ?? []
-}
+  useEffect(() => {
+    if (!id) return
+    const fetchIssue = async () => {
+      const res = await fetch(`${API_BASE}/issues/${id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setIssue(data)
+      }
+    }
+    fetchIssue()
+    const interval = setInterval(fetchIssue, 2000)
+    return () => clearInterval(interval)
+  }, [id])
 
-export async function getNextIdentifier(teamId: string): Promise<string> {
-  const team = await db.teams.get(teamId)
-  if (!team) throw new Error('Team not found')
-
-  const issues = await db.issues.where('teamId').equals(teamId).toArray()
-  const numbers = issues
-    .map((i) => parseInt(i.identifier.split('-')[1] || '0'))
-    .filter((n) => !isNaN(n))
-  const max = numbers.length > 0 ? Math.max(...numbers) : 0
-
-  return `${team.key}-${max + 1}`
-}
-
-export async function createIssue(data: Omit<Issue, 'id' | 'identifier' | 'createdAt' | 'updatedAt'>) {
-  const identifier = await getNextIdentifier(data.teamId)
-  const now = Date.now()
-  const issue: Issue = {
-    ...data,
-    id: generateId(),
-    identifier,
-    createdAt: now,
-    updatedAt: now,
-  }
-  await db.issues.add(issue)
   return issue
 }
 
+export function useIssuesByTeam(teamId: string) {
+  const [issues, setIssues] = useState<Issue[]>([])
+
+  useEffect(() => {
+    const fetchIssues = async () => {
+      const res = await fetch(`${API_BASE}/teams/${teamId}/issues`)
+      if (res.ok) {
+        const data = await res.json()
+        setIssues(data)
+      }
+    }
+    fetchIssues()
+    const interval = setInterval(fetchIssues, 2000)
+    return () => clearInterval(interval)
+  }, [teamId])
+
+  return issues
+}
+
+export async function createIssue(data: Omit<Issue, 'id' | 'identifier' | 'createdAt' | 'updatedAt'>) {
+  const res = await fetch(`${API_BASE}/issues`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error('Failed to create issue')
+  return res.json()
+}
+
 export async function updateIssue(id: string, changes: Partial<Issue>) {
-  await db.issues.update(id, { ...changes, updatedAt: Date.now() })
+  const res = await fetch(`${API_BASE}/issues/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(changes),
+  })
+  if (!res.ok) throw new Error('Failed to update issue')
 }
 
 export async function deleteIssue(id: string) {
-  await db.issues.delete(id)
-  await db.issueHistory.where('issueId').equals(id).delete()
-}
-
-function getPriorityIndex(priority: string): number {
-  const order = ['no_priority', 'low', 'medium', 'high', 'urgent']
-  return order.indexOf(priority)
+  const res = await fetch(`${API_BASE}/issues/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Failed to delete issue')
 }

@@ -1,21 +1,53 @@
-import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '../db/schema'
-import { generateId } from '../lib/utils'
+import { useEffect, useState } from 'react'
 import type { Team } from '../types'
 
+const API_BASE = '/api'
+
 export function useTeams() {
-  return useLiveQuery(() => db.teams.toArray(), []) ?? []
+  const [teams, setTeams] = useState<Team[]>([])
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      const res = await fetch(`${API_BASE}/teams`)
+      if (res.ok) {
+        const data = await res.json()
+        setTeams(data)
+      }
+    }
+    fetchTeams()
+    const interval = setInterval(fetchTeams, 2000)
+    return () => clearInterval(interval)
+  }, [])
+
+  return teams
 }
 
 export function useTeam(id: string | undefined) {
-  return useLiveQuery(
-    () => (id ? db.teams.get(id) : undefined),
-    [id]
-  )
+  const [team, setTeam] = useState<Team | undefined>(undefined)
+
+  useEffect(() => {
+    if (!id) return
+    const fetchTeam = async () => {
+      const res = await fetch(`${API_BASE}/teams/${id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setTeam(data)
+      }
+    }
+    fetchTeam()
+    const interval = setInterval(fetchTeam, 2000)
+    return () => clearInterval(interval)
+  }, [id])
+
+  return team
 }
 
 export async function createTeam(data: Omit<Team, 'id' | 'createdAt'>) {
-  const team: Team = { ...data, id: generateId(), createdAt: Date.now() }
-  await db.teams.add(team)
-  return team
+  const res = await fetch(`${API_BASE}/teams`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error('Failed to create team')
+  return res.json()
 }
