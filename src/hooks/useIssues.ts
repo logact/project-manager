@@ -53,6 +53,7 @@ export function useIssuesByTeam(teamId: string) {
   const [issues, setIssues] = useState<Issue[]>([])
 
   useEffect(() => {
+    if (!teamId) return
     const fetchIssues = async () => {
       const res = await fetch(`${API_BASE}/teams/${teamId}/issues`)
       if (res.ok) {

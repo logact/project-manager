@@ -20,7 +20,7 @@ docker run -d \
   --network "$NETWORK_NAME" \
   -p 8082:8082 \
   -v "$(pwd)/data:/app/data" \
-  -e CORS_ORIGIN=http://localhost:8081 \
+  -e CORS_ORIGIN=* \
   --restart unless-stopped \
   pm-backend
 
