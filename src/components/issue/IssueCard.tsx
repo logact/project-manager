@@ -12,7 +12,8 @@ export default function IssueCard({
   onClick?: () => void
   draggable?: boolean
 }) {
-  const labels = useLabels(issue.teamId)
+  const labelsQuery = useLabels(issue.teamId)
+  const labels = labelsQuery.data ?? []
   const issueLabels = labels.filter((l) => issue.labelIds.includes(l.id))
 
   return (

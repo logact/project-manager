@@ -24,7 +24,8 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
   const navigate = useNavigate()
   const teamId = propTeamId || params.teamId || ''
   const projectId = propProjectId || params.projectId
-  const issues = useIssuesByTeam(teamId)
+  const issuesQuery = useIssuesByTeam(teamId)
+  const issues = issuesQuery.data ?? []
 
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
   const [isCreating, setIsCreating] = useState(false)
@@ -158,8 +159,10 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
 }
 
 function ListRow({ issue, onClick }: { issue: Issue; onClick: () => void }) {
-  const assignee = useUser(issue.assigneeId)
-  const project = useProject(issue.projectId)
+  const assigneeQuery = useUser(issue.assigneeId)
+  const assignee = assigneeQuery.data
+  const projectQuery = useProject(issue.projectId)
+  const project = projectQuery.data
 
   return (
     <div

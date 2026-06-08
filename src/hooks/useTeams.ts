@@ -1,44 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { Team } from '../types'
 import { API_BASE } from '../config'
+import { queryClient } from '../lib/queryClient'
 
 export function useTeams() {
-  const [teams, setTeams] = useState<Team[]>([])
-
-  useEffect(() => {
-    const fetchTeams = async () => {
+  return useQuery({
+    queryKey: ['teams'],
+    queryFn: async () => {
       const res = await fetch(`${API_BASE}/teams`)
-      if (res.ok) {
-        const data = await res.json()
-        setTeams(data)
-      }
-    }
-    fetchTeams()
-    const interval = setInterval(fetchTeams, 2000)
-    return () => clearInterval(interval)
-  }, [])
-
-  return teams
+      if (!res.ok) throw new Error('Failed to fetch teams')
+      return res.json() as Promise<Team[]>
+    },
+  })
 }
 
 export function useTeam(id: string | undefined) {
-  const [team, setTeam] = useState<Team | undefined>(undefined)
-
-  useEffect(() => {
-    if (!id) return
-    const fetchTeam = async () => {
+  return useQuery({
+    queryKey: ['team', id],
+    queryFn: async () => {
+      if (!id) throw new Error('No team id')
       const res = await fetch(`${API_BASE}/teams/${id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setTeam(data)
-      }
-    }
-    fetchTeam()
-    const interval = setInterval(fetchTeam, 2000)
-    return () => clearInterval(interval)
-  }, [id])
-
-  return team
+      if (!res.ok) throw new Error('Failed to fetch team')
+      return res.json() as Promise<Team>
+    },
+    enabled: !!id,
+  })
 }
 
 export async function createTeam(data: Omit<Team, 'id' | 'createdAt'>) {
@@ -48,10 +34,14 @@ export async function createTeam(data: Omit<Team, 'id' | 'createdAt'>) {
     body: JSON.stringify(data),
   })
   if (!res.ok) throw new Error('Failed to create team')
-  return res.json()
+  const result = await res.json()
+  queryClient.invalidateQueries({ queryKey: ['teams'] })
+  return result
 }
 
 export async function deleteTeam(id: string) {
   const res = await fetch(`${API_BASE}/teams/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error('Failed to delete team')
+  queryClient.invalidateQueries({ queryKey: ['teams'] })
+  queryClient.invalidateQueries({ queryKey: ['projects'] })
 }

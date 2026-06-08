@@ -18,7 +18,8 @@ import CreateTeamModal from '../team/CreateTeamModal'
 import CreateProjectModal from '../project/CreateProjectModal'
 
 export default function Sidebar() {
-  const teams = useTeams()
+  const teamsQuery = useTeams()
+  const teams = teamsQuery.data ?? []
   const location = useLocation()
   const navigate = useNavigate()
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set())
@@ -183,7 +184,8 @@ function TeamSection({
   onDeleteTeam: () => void
   onDeleteProject: (projectId: string, projectName: string) => void
 }) {
-  const projects = useProjects(team.id)
+  const projectsQuery = useProjects(team.id)
+  const projects = projectsQuery.data ?? []
 
   return (
     <div className="px-2 mb-0.5">

@@ -10,7 +10,8 @@ export default function AssigneeAvatar({
   size?: 'xs' | 'sm' | 'md'
   className?: string
 }) {
-  const user = useUser(userId)
+  const userQuery = useUser(userId)
+  const user = userQuery.data
   const sizeClass = {
     xs: 'w-5 h-5 text-[9px]',
     sm: 'w-6 h-6 text-[10px]',

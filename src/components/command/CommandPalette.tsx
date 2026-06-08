@@ -28,9 +28,12 @@ export default function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  const teams = useTeams()
-  const projects = useProjects()
-  const allIssues = useIssues()
+  const teamsQuery = useTeams()
+  const teams = teamsQuery.data ?? []
+  const projectsQuery = useProjects()
+  const projects = projectsQuery.data ?? []
+  const allIssuesQuery = useIssues()
+  const allIssues = allIssuesQuery.data ?? []
 
   const filteredIssues = useMemo(() => {
     if (!query.trim()) return allIssues.slice(0, 5)

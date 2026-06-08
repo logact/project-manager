@@ -15,7 +15,8 @@ export default function CreateProjectModal({
   defaultTeamId?: string
   onClose: () => void
 }) {
-  const teams = useTeams()
+  const teamsQuery = useTeams()
+  const teams = teamsQuery.data ?? []
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [teamId, setTeamId] = useState(defaultTeamId || teams[0]?.id || '')
@@ -110,9 +111,7 @@ export default function CreateProjectModal({
                 onChange={(e) => setState(e.target.value as ProjectState)}
                 className="w-full bg-bg-tertiary border border-border rounded px-2 py-1.5 text-sm text-text"
               >
-                {states.map((s) => (
-                  <option key={s} value={s}>{s.replace('_', ' ')}</option>
-                ))}
+                {states.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
               </select>
             </div>
 

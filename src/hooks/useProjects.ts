@@ -1,45 +1,31 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { Project } from '../types'
 import { API_BASE } from '../config'
+import { queryClient } from '../lib/queryClient'
 
 export function useProjects(teamId?: string) {
-  const [projects, setProjects] = useState<Project[]>([])
-
-  useEffect(() => {
-    const fetchProjects = async () => {
+  return useQuery({
+    queryKey: ['projects', teamId],
+    queryFn: async () => {
       const url = teamId ? `${API_BASE}/projects?teamId=${teamId}` : `${API_BASE}/projects`
       const res = await fetch(url)
-      if (res.ok) {
-        const data = await res.json()
-        setProjects(data)
-      }
-    }
-    fetchProjects()
-    const interval = setInterval(fetchProjects, 2000)
-    return () => clearInterval(interval)
-  }, [teamId])
-
-  return projects
+      if (!res.ok) throw new Error('Failed to fetch projects')
+      return res.json() as Promise<Project[]>
+    },
+  })
 }
 
 export function useProject(id: string | undefined) {
-  const [project, setProject] = useState<Project | undefined>(undefined)
-
-  useEffect(() => {
-    if (!id) return
-    const fetchProject = async () => {
+  return useQuery({
+    queryKey: ['project', id],
+    queryFn: async () => {
+      if (!id) throw new Error('No project id')
       const res = await fetch(`${API_BASE}/projects/${id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setProject(data)
-      }
-    }
-    fetchProject()
-    const interval = setInterval(fetchProject, 2000)
-    return () => clearInterval(interval)
-  }, [id])
-
-  return project
+      if (!res.ok) throw new Error('Failed to fetch project')
+      return res.json() as Promise<Project>
+    },
+    enabled: !!id,
+  })
 }
 
 export async function createProject(data: Omit<Project, 'id' | 'createdAt'>) {
@@ -49,7 +35,9 @@ export async function createProject(data: Omit<Project, 'id' | 'createdAt'>) {
     body: JSON.stringify(data),
   })
   if (!res.ok) throw new Error('Failed to create project')
-  return res.json()
+  const result = await res.json()
+  queryClient.invalidateQueries({ queryKey: ['projects'] })
+  return result
 }
 
 export async function updateProject(id: string, changes: Partial<Project>) {
@@ -59,9 +47,12 @@ export async function updateProject(id: string, changes: Partial<Project>) {
     body: JSON.stringify(changes),
   })
   if (!res.ok) throw new Error('Failed to update project')
+  queryClient.invalidateQueries({ queryKey: ['projects'] })
+  queryClient.invalidateQueries({ queryKey: ['project', id] })
 }
 
 export async function deleteProject(id: string) {
   const res = await fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error('Failed to delete project')
+  queryClient.invalidateQueries({ queryKey: ['projects'] })
 }

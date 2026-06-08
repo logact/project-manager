@@ -1,25 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { Label } from '../types'
 import { API_BASE } from '../config'
+import { queryClient } from '../lib/queryClient'
 
 export function useLabels(teamId?: string) {
-  const [labels, setLabels] = useState<Label[]>([])
-
-  useEffect(() => {
-    const fetchLabels = async () => {
+  return useQuery({
+    queryKey: ['labels', teamId],
+    queryFn: async () => {
       const url = teamId ? `${API_BASE}/labels?teamId=${teamId}` : `${API_BASE}/labels`
       const res = await fetch(url)
-      if (res.ok) {
-        const data = await res.json()
-        setLabels(data)
-      }
-    }
-    fetchLabels()
-    const interval = setInterval(fetchLabels, 2000)
-    return () => clearInterval(interval)
-  }, [teamId])
-
-  return labels
+      if (!res.ok) throw new Error('Failed to fetch labels')
+      return res.json() as Promise<Label[]>
+    },
+  })
 }
 
 export async function createLabel(data: Omit<Label, 'id' | 'createdAt'>) {
@@ -29,5 +22,7 @@ export async function createLabel(data: Omit<Label, 'id' | 'createdAt'>) {
     body: JSON.stringify(data),
   })
   if (!res.ok) throw new Error('Failed to create label')
-  return res.json()
+  const result = await res.json()
+  queryClient.invalidateQueries({ queryKey: ['labels'] })
+  return result
 }

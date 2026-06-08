@@ -1,72 +1,50 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { Issue, IssueState } from '../types'
 import { API_BASE } from '../config'
+import { queryClient } from '../lib/queryClient'
 
 export function useIssues(filters?: { teamId?: string; state?: IssueState; projectId?: string; assigneeId?: string }) {
-  const [issues, setIssues] = useState<Issue[]>([])
+  return useQuery({
+    queryKey: ['issues', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (filters?.teamId) params.set('teamId', filters.teamId)
+      if (filters?.state) params.set('state', filters.state)
+      if (filters?.projectId) params.set('projectId', filters.projectId)
+      if (filters?.assigneeId) params.set('assigneeId', filters.assigneeId)
 
-  const fetchIssues = useCallback(async () => {
-    const params = new URLSearchParams()
-    if (filters?.teamId) params.set('teamId', filters.teamId)
-    if (filters?.state) params.set('state', filters.state)
-    if (filters?.projectId) params.set('projectId', filters.projectId)
-    if (filters?.assigneeId) params.set('assigneeId', filters.assigneeId)
-
-    const url = `${API_BASE}/issues${params.toString() ? '?' + params.toString() : ''}`
-    const res = await fetch(url)
-    if (res.ok) {
-      const data = await res.json()
-      setIssues(data)
-    }
-  }, [filters?.teamId, filters?.state, filters?.projectId, filters?.assigneeId])
-
-  useEffect(() => {
-    fetchIssues()
-    const interval = setInterval(fetchIssues, 2000)
-    return () => clearInterval(interval)
-  }, [fetchIssues])
-
-  return issues
+      const url = `${API_BASE}/issues${params.toString() ? '?' + params.toString() : ''}`
+      const res = await fetch(url)
+      if (!res.ok) throw new Error('Failed to fetch issues')
+      return res.json() as Promise<Issue[]>
+    },
+  })
 }
 
 export function useIssue(id: string | undefined) {
-  const [issue, setIssue] = useState<Issue | undefined>(undefined)
-
-  useEffect(() => {
-    if (!id) return
-    const fetchIssue = async () => {
+  return useQuery({
+    queryKey: ['issue', id],
+    queryFn: async () => {
+      if (!id) throw new Error('No issue id')
       const res = await fetch(`${API_BASE}/issues/${id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setIssue(data)
-      }
-    }
-    fetchIssue()
-    const interval = setInterval(fetchIssue, 2000)
-    return () => clearInterval(interval)
-  }, [id])
-
-  return issue
+      if (!res.ok) throw new Error('Failed to fetch issue')
+      return res.json() as Promise<Issue>
+    },
+    enabled: !!id,
+  })
 }
 
 export function useIssuesByTeam(teamId: string) {
-  const [issues, setIssues] = useState<Issue[]>([])
-
-  useEffect(() => {
-    if (!teamId) return
-    const fetchIssues = async () => {
+  return useQuery({
+    queryKey: ['issues', 'team', teamId],
+    queryFn: async () => {
+      if (!teamId) throw new Error('No team id')
       const res = await fetch(`${API_BASE}/teams/${teamId}/issues`)
-      if (res.ok) {
-        const data = await res.json()
-        setIssues(data)
-      }
-    }
-    fetchIssues()
-    const interval = setInterval(fetchIssues, 2000)
-    return () => clearInterval(interval)
-  }, [teamId])
-
-  return issues
+      if (!res.ok) throw new Error('Failed to fetch issues')
+      return res.json() as Promise<Issue[]>
+    },
+    enabled: !!teamId,
+  })
 }
 
 export async function createIssue(data: Omit<Issue, 'id' | 'identifier' | 'createdAt' | 'updatedAt'>) {
@@ -76,7 +54,9 @@ export async function createIssue(data: Omit<Issue, 'id' | 'identifier' | 'creat
     body: JSON.stringify(data),
   })
   if (!res.ok) throw new Error('Failed to create issue')
-  return res.json()
+  const result = await res.json()
+  queryClient.invalidateQueries({ queryKey: ['issues'] })
+  return result
 }
 
 export async function updateIssue(id: string, changes: Partial<Issue>) {
@@ -86,9 +66,12 @@ export async function updateIssue(id: string, changes: Partial<Issue>) {
     body: JSON.stringify(changes),
   })
   if (!res.ok) throw new Error('Failed to update issue')
+  queryClient.invalidateQueries({ queryKey: ['issues'] })
+  queryClient.invalidateQueries({ queryKey: ['issue', id] })
 }
 
 export async function deleteIssue(id: string) {
   const res = await fetch(`${API_BASE}/issues/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error('Failed to delete issue')
+  queryClient.invalidateQueries({ queryKey: ['issues'] })
 }

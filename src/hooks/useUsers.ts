@@ -1,44 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { User } from '../types'
 import { API_BASE } from '../config'
+import { queryClient } from '../lib/queryClient'
 
 export function useUsers() {
-  const [users, setUsers] = useState<User[]>([])
-
-  useEffect(() => {
-    const fetchUsers = async () => {
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
       const res = await fetch(`${API_BASE}/users`)
-      if (res.ok) {
-        const data = await res.json()
-        setUsers(data)
-      }
-    }
-    fetchUsers()
-    const interval = setInterval(fetchUsers, 2000)
-    return () => clearInterval(interval)
-  }, [])
-
-  return users
+      if (!res.ok) throw new Error('Failed to fetch users')
+      return res.json() as Promise<User[]>
+    },
+  })
 }
 
 export function useUser(id: string | undefined) {
-  const [user, setUser] = useState<User | undefined>(undefined)
-
-  useEffect(() => {
-    if (!id) return
-    const fetchUser = async () => {
+  return useQuery({
+    queryKey: ['user', id],
+    queryFn: async () => {
+      if (!id) throw new Error('No user id')
       const res = await fetch(`${API_BASE}/users/${id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setUser(data)
-      }
-    }
-    fetchUser()
-    const interval = setInterval(fetchUser, 2000)
-    return () => clearInterval(interval)
-  }, [id])
-
-  return user
+      if (!res.ok) throw new Error('Failed to fetch user')
+      return res.json() as Promise<User>
+    },
+    enabled: !!id,
+  })
 }
 
 export async function createUser(data: Omit<User, 'id' | 'createdAt'>) {
@@ -48,5 +34,7 @@ export async function createUser(data: Omit<User, 'id' | 'createdAt'>) {
     body: JSON.stringify(data),
   })
   if (!res.ok) throw new Error('Failed to create user')
-  return res.json()
+  const result = await res.json()
+  queryClient.invalidateQueries({ queryKey: ['users'] })
+  return result
 }

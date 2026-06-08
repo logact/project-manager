@@ -4,8 +4,7 @@ import { LayoutGrid, List as ListIcon, Plus } from 'lucide-react'
 import BoardColumn from './BoardColumn'
 import IssueModal from '../issue/IssueModal'
 import Button from '../ui/Button'
-import { useIssuesByTeam } from '../../hooks/useIssues'
-import { updateIssue } from '../../hooks/useIssues'
+import { useIssuesByTeam, updateIssue } from '../../hooks/useIssues'
 import type { Issue, IssueState } from '../../types'
 
 const columns: { state: IssueState; title: string }[] = [
@@ -27,7 +26,8 @@ export default function BoardView({ teamId: propTeamId, projectId: propProjectId
   const navigate = useNavigate()
   const teamId = propTeamId || params.teamId || ''
   const projectId = propProjectId || params.projectId
-  const issues = useIssuesByTeam(teamId)
+  const issuesQuery = useIssuesByTeam(teamId)
+  const issues = issuesQuery.data ?? []
 
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
   const [isCreating, setIsCreating] = useState(false)

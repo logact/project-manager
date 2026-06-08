@@ -3,12 +3,11 @@ import { X, Trash2 } from 'lucide-react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import PriorityIcon from './PriorityIcon'
-import { createIssue, updateIssue, deleteIssue } from '../../hooks/useIssues'
+import { createIssue, updateIssue, deleteIssue, useIssue } from '../../hooks/useIssues'
 import { useTeams } from '../../hooks/useTeams'
 import { useProjects } from '../../hooks/useProjects'
 import { useUsers } from '../../hooks/useUsers'
 import { useLabels } from '../../hooks/useLabels'
-import { useIssue } from '../../hooks/useIssues'
 import { cn } from '../../lib/utils'
 import type { IssueState, Priority } from '../../types'
 
@@ -28,12 +27,17 @@ export default function IssueModal({
   onSaved?: () => void
   onDeleted?: () => void
 }) {
-  const existingIssue = useIssue(issueId)
-  const teams = useTeams()
-  const users = useUsers()
+  const existingIssueQuery = useIssue(issueId)
+  const existingIssue = existingIssueQuery.data
+  const teamsQuery = useTeams()
+  const teams = teamsQuery.data ?? []
+  const usersQuery = useUsers()
+  const users = usersQuery.data ?? []
   const [selectedTeamId, setSelectedTeamId] = useState(teamId || teams[0]?.id || '')
-  const projects = useProjects(selectedTeamId)
-  const labels = useLabels(selectedTeamId)
+  const projectsQuery = useProjects(selectedTeamId)
+  const projects = projectsQuery.data ?? []
+  const labelsQuery = useLabels(selectedTeamId)
+  const labels = labelsQuery.data ?? []
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
