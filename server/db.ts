@@ -4,7 +4,7 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const DATA_DIR = path.join(__dirname, '..', 'data')
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data')
 const DB_PATH = path.join(DATA_DIR, 'project-manager.db')
 
 if (!fs.existsSync(DATA_DIR)) {
