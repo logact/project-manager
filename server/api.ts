@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import {
   getTeams, getTeam, createTeam,
-  getProjects, getProject, createProject,
+  getProjects, getProject, createProject, updateProject,
   getUsers, getUser, createUser,
   getLabels, createLabel,
   getIssues, getIssue, getIssueByIdentifier, getIssuesByTeam,
@@ -45,9 +45,34 @@ app.get('/api/projects/:id', (req, res) => {
 })
 
 app.post('/api/projects', (req, res) => {
-  const data = { ...req.body, id: crypto.randomUUID(), created_at: Date.now() }
+  const data = {
+    ...req.body,
+    id: crypto.randomUUID(),
+    team_id: req.body.teamId,
+    start_date: req.body.startDate || null,
+    target_date: req.body.targetDate || null,
+    created_at: Date.now(),
+  }
+  delete data.teamId
+  delete data.startDate
+  delete data.targetDate
   createProject(data)
   res.status(201).json(mapRow(data))
+})
+
+app.patch('/api/projects/:id', (req, res) => {
+  const changes: Record<string, unknown> = { ...req.body }
+
+  if (changes.teamId !== undefined) { changes.team_id = changes.teamId; delete changes.teamId }
+  if (changes.startDate !== undefined) { changes.start_date = changes.startDate; delete changes.startDate }
+  if (changes.targetDate !== undefined) { changes.target_date = changes.targetDate; delete changes.targetDate }
+
+  delete changes.id
+  delete changes.createdAt
+
+  updateProject(req.params.id, changes)
+  const row = getProject(req.params.id)
+  res.json(mapRow(row))
 })
 
 // Users
@@ -63,7 +88,8 @@ app.get('/api/users/:id', (req, res) => {
 })
 
 app.post('/api/users', (req, res) => {
-  const data = { ...req.body, id: crypto.randomUUID(), created_at: Date.now() }
+  const data = { ...req.body, id: crypto.randomUUID(), avatar_url: req.body.avatarUrl || null, created_at: Date.now() }
+  delete data.avatarUrl
   createUser(data)
   res.status(201).json(mapRow(data))
 })
@@ -75,7 +101,8 @@ app.get('/api/labels', (req, res) => {
 })
 
 app.post('/api/labels', (req, res) => {
-  const data = { ...req.body, id: crypto.randomUUID(), created_at: Date.now() }
+  const data = { ...req.body, id: crypto.randomUUID(), team_id: req.body.teamId, created_at: Date.now() }
+  delete data.teamId
   createLabel(data)
   res.status(201).json(mapRow(data))
 })
@@ -130,11 +157,18 @@ app.post('/api/issues', async (req, res) => {
 
 app.patch('/api/issues/:id', (req, res) => {
   const changes: Record<string, unknown> = { ...req.body, updated_at: Date.now() }
+
+  // Map camelCase keys to snake_case
   if (changes.labelIds !== undefined) {
     changes.label_ids = JSON.stringify(changes.labelIds)
     delete changes.labelIds
   }
-  // Remove camelCase keys that don't exist in DB
+  if (changes.assigneeId !== undefined) { changes.assignee_id = changes.assigneeId; delete changes.assigneeId }
+  if (changes.projectId !== undefined) { changes.project_id = changes.projectId; delete changes.projectId }
+  if (changes.cycleId !== undefined) { changes.cycle_id = changes.cycleId; delete changes.cycleId }
+  if (changes.teamId !== undefined) { changes.team_id = changes.teamId; delete changes.teamId }
+
+  // Remove keys that don't exist in DB
   delete changes.id
   delete changes.identifier
   delete changes.createdAt

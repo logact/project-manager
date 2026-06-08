@@ -267,6 +267,12 @@ export function createProject(data: Record<string, unknown>) {
   return data
 }
 
+export function updateProject(id: string, changes: Record<string, unknown>) {
+  const sets = Object.keys(changes).map((k) => `${k} = ?`).join(', ')
+  const values = [...Object.values(changes), id]
+  db.prepare(`UPDATE projects SET ${sets} WHERE id = ?`).run(...values)
+}
+
 export function getUsers() {
   return db.prepare('SELECT * FROM users ORDER BY created_at').all()
 }
