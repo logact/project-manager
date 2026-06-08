@@ -112,9 +112,18 @@ app.post('/api/issues', async (req, res) => {
     id: crypto.randomUUID(),
     identifier,
     label_ids: JSON.stringify(req.body.labelIds || []),
+    team_id: teamId,
+    assignee_id: req.body.assigneeId || null,
+    project_id: req.body.projectId || null,
+    cycle_id: req.body.cycleId || null,
     created_at: now,
     updated_at: now,
   }
+  delete data.teamId
+  delete data.labelIds
+  delete data.assigneeId
+  delete data.projectId
+  delete data.cycleId
   createIssue(data)
   res.status(201).json(mapRow(data))
 })
