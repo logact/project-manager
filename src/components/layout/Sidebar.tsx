@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   Layers,
   FolderKanban,
@@ -9,9 +9,10 @@ import {
   Plus,
   Inbox,
   CircleDot,
+  Trash2,
 } from 'lucide-react'
-import { useTeams } from '../../hooks/useTeams'
-import { useProjects } from '../../hooks/useProjects'
+import { useTeams, deleteTeam } from '../../hooks/useTeams'
+import { useProjects, deleteProject } from '../../hooks/useProjects'
 import { cn } from '../../lib/utils'
 import CreateTeamModal from '../team/CreateTeamModal'
 import CreateProjectModal from '../project/CreateProjectModal'
@@ -19,10 +20,27 @@ import CreateProjectModal from '../project/CreateProjectModal'
 export default function Sidebar() {
   const teams = useTeams()
   const location = useLocation()
+  const navigate = useNavigate()
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set())
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [projectModalTeamId, setProjectModalTeamId] = useState<string | undefined>(undefined)
+
+  const handleDeleteTeam = async (teamId: string, teamName: string) => {
+    if (!confirm(`Delete team "${teamName}"? This will also delete all issues, projects, and labels in this team.`)) return
+    await deleteTeam(teamId)
+    if (location.pathname.includes(`/team/${teamId}`) || location.pathname.includes(`/project/`)) {
+      navigate('/')
+    }
+  }
+
+  const handleDeleteProject = async (projectId: string, projectName: string) => {
+    if (!confirm(`Delete project "${projectName}"?`)) return
+    await deleteProject(projectId)
+    if (location.pathname.includes(`/project/${projectId}`)) {
+      navigate('/')
+    }
+  }
 
   // Auto-expand team when on its page or a project within it
   useEffect(() => {
@@ -123,6 +141,8 @@ export default function Sidebar() {
                 isExpanded={expandedTeams.has(team.id)}
                 onToggle={() => toggleTeam(team.id)}
                 onCreateProject={() => openProjectModal(team.id)}
+                onDeleteTeam={() => handleDeleteTeam(team.id, team.name)}
+                onDeleteProject={handleDeleteProject}
               />
             ))}
           </div>
@@ -153,31 +173,44 @@ function TeamSection({
   isExpanded,
   onToggle,
   onCreateProject,
+  onDeleteTeam,
+  onDeleteProject,
 }: {
   team: { id: string; name: string; key: string; color: string }
   isExpanded: boolean
   onToggle: () => void
   onCreateProject: () => void
+  onDeleteTeam: () => void
+  onDeleteProject: (projectId: string, projectName: string) => void
 }) {
   const projects = useProjects(team.id)
 
   return (
     <div className="px-2 mb-0.5">
-      <button
-        onClick={onToggle}
-        className="flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-text-secondary hover:bg-bg-hover hover:text-text transition-colors"
-      >
-        {isExpanded ? (
-          <ChevronDown className="w-3.5 h-3.5" />
-        ) : (
-          <ChevronRight className="w-3.5 h-3.5" />
-        )}
-        <span
-          className="w-2 h-2 rounded-full flex-shrink-0"
-          style={{ backgroundColor: team.color }}
-        />
-        <span className="truncate">{team.name}</span>
-      </button>
+      <div className="flex items-center gap-1 group">
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-2 flex-1 px-2 py-1.5 rounded text-sm text-text-secondary hover:bg-bg-hover hover:text-text transition-colors"
+        >
+          {isExpanded ? (
+            <ChevronDown className="w-3.5 h-3.5" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5" />
+          )}
+          <span
+            className="w-2 h-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: team.color }}
+          />
+          <span className="truncate">{team.name}</span>
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDeleteTeam() }}
+          className="opacity-0 group-hover:opacity-100 p-1 rounded text-text-muted hover:text-danger hover:bg-danger-bg transition-all"
+          title="Delete team"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      </div>
 
       {isExpanded && (
         <div className="ml-5 mt-0.5">
@@ -197,21 +230,29 @@ function TeamSection({
           </NavLink>
 
           {projects.map((project) => (
-            <NavLink
-              key={project.id}
-              to={`/project/${project.id}`}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2 px-2 py-1 rounded text-sm transition-colors',
-                  isActive
-                    ? 'bg-bg-tertiary text-text'
-                    : 'text-text-muted hover:bg-bg-hover hover:text-text'
-                )
-              }
-            >
-              <FolderKanban className="w-3.5 h-3.5" />
-              <span className="truncate">{project.name}</span>
-            </NavLink>
+            <div key={project.id} className="flex items-center gap-1 group/project">
+              <NavLink
+                to={`/project/${project.id}`}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-2 flex-1 px-2 py-1 rounded text-sm transition-colors',
+                    isActive
+                      ? 'bg-bg-tertiary text-text'
+                      : 'text-text-muted hover:bg-bg-hover hover:text-text'
+                  )
+                }
+              >
+                <FolderKanban className="w-3.5 h-3.5" />
+                <span className="truncate">{project.name}</span>
+              </NavLink>
+              <button
+                onClick={(e) => { e.stopPropagation(); onDeleteProject(project.id, project.name) }}
+                className="opacity-0 group-hover/project:opacity-100 p-1 rounded text-text-muted hover:text-danger hover:bg-danger-bg transition-all"
+                title="Delete project"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
           ))}
 
           <button

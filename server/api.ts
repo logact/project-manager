@@ -1,8 +1,8 @@
 import express from 'express'
 import cors from 'cors'
 import {
-  getTeams, getTeam, createTeam,
-  getProjects, getProject, createProject, updateProject,
+  getTeams, getTeam, createTeam, deleteTeam,
+  getProjects, getProject, createProject, updateProject, deleteProject,
   getUsers, getUser, createUser,
   getLabels, createLabel,
   getIssues, getIssue, getIssueByIdentifier, getIssuesByTeam,
@@ -32,6 +32,11 @@ app.post('/api/teams', (req, res) => {
   res.status(201).json(mapRow(data))
 })
 
+app.delete('/api/teams/:id', (req, res) => {
+  deleteTeam(req.params.id)
+  res.status(204).send()
+})
+
 // Projects
 app.get('/api/projects', (req, res) => {
   const rows = getProjects(req.query.teamId as string | undefined)
@@ -58,6 +63,11 @@ app.post('/api/projects', (req, res) => {
   delete data.targetDate
   createProject(data)
   res.status(201).json(mapRow(data))
+})
+
+app.delete('/api/projects/:id', (req, res) => {
+  deleteProject(req.params.id)
+  res.status(204).send()
 })
 
 app.patch('/api/projects/:id', (req, res) => {

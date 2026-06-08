@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { X, Trash2 } from 'lucide-react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import PriorityIcon from './PriorityIcon'
-import { createIssue, updateIssue } from '../../hooks/useIssues'
+import { createIssue, updateIssue, deleteIssue } from '../../hooks/useIssues'
 import { useTeams } from '../../hooks/useTeams'
 import { useProjects } from '../../hooks/useProjects'
 import { useUsers } from '../../hooks/useUsers'
@@ -20,11 +20,13 @@ export default function IssueModal({
   teamId,
   onClose,
   onSaved,
+  onDeleted,
 }: {
   issueId?: string
   teamId?: string
   onClose: () => void
   onSaved?: () => void
+  onDeleted?: () => void
 }) {
   const existingIssue = useIssue(issueId)
   const teams = useTeams()
@@ -101,6 +103,14 @@ export default function IssueModal({
     }
 
     onSaved?.()
+    onClose()
+  }
+
+  const handleDelete = async () => {
+    if (!existingIssue) return
+    if (!confirm(`Delete ${existingIssue.identifier}?`)) return
+    await deleteIssue(existingIssue.id)
+    onDeleted?.()
     onClose()
   }
 
@@ -282,6 +292,11 @@ export default function IssueModal({
             Cmd + Enter to save
           </span>
           <div className="flex gap-2">
+            {existingIssue && (
+              <Button variant="danger" size="sm" onClick={handleDelete}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={onClose}>
               Cancel
             </Button>

@@ -147,7 +147,11 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
         <IssueModal teamId={teamId} onClose={() => setIsCreating(false)} />
       )}
       {selectedIssue && (
-        <IssueModal issueId={selectedIssue.id} onClose={() => setSelectedIssue(null)} />
+        <IssueModal
+          issueId={selectedIssue.id}
+          onClose={() => setSelectedIssue(null)}
+          onDeleted={() => setSelectedIssue(null)}
+        />
       )}
     </div>
   )

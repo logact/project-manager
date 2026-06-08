@@ -377,6 +377,20 @@ export function deleteIssue(id: string) {
   db.prepare('DELETE FROM issues WHERE id = ?').run(id)
 }
 
+export function deleteProject(id: string) {
+  db.prepare('UPDATE issues SET project_id = NULL WHERE project_id = ?').run(id)
+  db.prepare('DELETE FROM projects WHERE id = ?').run(id)
+}
+
+export function deleteTeam(id: string) {
+  db.prepare('DELETE FROM issue_history WHERE issue_id IN (SELECT id FROM issues WHERE team_id = ?)').run(id)
+  db.prepare('DELETE FROM issues WHERE team_id = ?').run(id)
+  db.prepare('DELETE FROM labels WHERE team_id = ?').run(id)
+  db.prepare('DELETE FROM cycles WHERE team_id = ?').run(id)
+  db.prepare('DELETE FROM projects WHERE team_id = ?').run(id)
+  db.prepare('DELETE FROM teams WHERE id = ?').run(id)
+}
+
 // Helper to map DB row (snake_case) to app object (camelCase)
 export function mapRow(row: Record<string, unknown>): Record<string, unknown> {
   const mapped: Record<string, unknown> = {}

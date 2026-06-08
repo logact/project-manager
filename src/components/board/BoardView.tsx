@@ -128,6 +128,7 @@ export default function BoardView({ teamId: propTeamId, projectId: propProjectId
         <IssueModal
           issueId={selectedIssue.id}
           onClose={() => setSelectedIssue(null)}
+          onDeleted={() => setSelectedIssue(null)}
         />
       )}
     </div>

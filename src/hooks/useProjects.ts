@@ -60,3 +60,8 @@ export async function updateProject(id: string, changes: Partial<Project>) {
   })
   if (!res.ok) throw new Error('Failed to update project')
 }
+
+export async function deleteProject(id: string) {
+  const res = await fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Failed to delete project')
+}

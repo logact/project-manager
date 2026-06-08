@@ -50,3 +50,8 @@ export async function createTeam(data: Omit<Team, 'id' | 'createdAt'>) {
   if (!res.ok) throw new Error('Failed to create team')
   return res.json()
 }
+
+export async function deleteTeam(id: string) {
+  const res = await fetch(`${API_BASE}/teams/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Failed to delete team')
+}
