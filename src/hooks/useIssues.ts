@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { Issue, IssueState } from '../types'
-
-const API_BASE = '/api'
+import { API_BASE } from '../config'
 
 export function useIssues(filters?: { teamId?: string; state?: IssueState; projectId?: string; assigneeId?: string }) {
   const [issues, setIssues] = useState<Issue[]>([])

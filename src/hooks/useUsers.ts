@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { User } from '../types'
-
-const API_BASE = '/api'
+import { API_BASE } from '../config'
 
 export function useUsers() {
   const [users, setUsers] = useState<User[]>([])

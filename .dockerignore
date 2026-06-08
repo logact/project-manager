@@ -1,0 +1,10 @@
+node_modules
+dist
+data/*.db-shm
+data/*.db-wal
+.git
+.gitignore
+README.md
+Dockerfile*
+docker-compose.yml
+nginx.conf

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Project } from '../types'
-
-const API_BASE = '/api'
+import { API_BASE } from '../config'
 
 export function useProjects(teamId?: string) {
   const [projects, setProjects] = useState<Project[]>([])

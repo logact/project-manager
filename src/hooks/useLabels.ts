@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Label } from '../types'
-
-const API_BASE = '/api'
+import { API_BASE } from '../config'
 
 export function useLabels(teamId?: string) {
   const [labels, setLabels] = useState<Label[]>([])

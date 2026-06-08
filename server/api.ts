@@ -11,7 +11,7 @@ import {
 } from './db.js'
 
 const app = express()
-app.use(cors())
+app.use(cors({ origin: process.env.CORS_ORIGIN || true }))
 app.use(express.json())
 
 // Teams
