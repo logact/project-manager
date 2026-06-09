@@ -1,11 +1,8 @@
-FROM node:22-alpine AS builder
-
-# better-sqlite3 requires Python and build tools to compile native bindings
-RUN apk add --no-cache python3 make g++
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
-# Install pnpm
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm
 
 COPY package.json ./
@@ -14,10 +11,9 @@ RUN pnpm install
 COPY . .
 RUN pnpm build
 
-# Production stage
-FROM node:22-alpine
+FROM node:22-slim
 
-RUN apk add --no-cache python3 make g++
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm
 
 WORKDIR /app
