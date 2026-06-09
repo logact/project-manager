@@ -11,6 +11,7 @@ import {
   CircleDot,
   Trash2,
 } from 'lucide-react'
+import TimerWidget from '../timer/TimerWidget'
 import { useTeams, deleteTeam } from '../../hooks/useTeams'
 import { useProjects, deleteProject } from '../../hooks/useProjects'
 import { cn } from '../../lib/utils'
@@ -150,7 +151,8 @@ export default function Sidebar() {
         </nav>
 
         {/* Bottom actions */}
-        <div className="border-t border-border p-2">
+        <div className="border-t border-border p-2 space-y-1">
+          <TimerWidget />
           <button className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-text-secondary hover:bg-bg-hover hover:text-text transition-colors w-full">
             <Settings className="w-4 h-4" />
             <span>Settings</span>

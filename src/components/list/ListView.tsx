@@ -6,7 +6,7 @@ import Button from '../ui/Button'
 import PriorityIcon from '../issue/PriorityIcon'
 import AssigneeAvatar from '../issue/AssigneeAvatar'
 import StateBadge from '../issue/StateBadge'
-import { useIssuesByTeam } from '../../hooks/useIssues'
+import { useIssues, useIssuesByTeam } from '../../hooks/useIssues'
 import { useUser } from '../../hooks/useUsers'
 import { useProject } from '../../hooks/useProjects'
 import { formatDate } from '../../lib/utils'
@@ -24,7 +24,9 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
   const navigate = useNavigate()
   const teamId = propTeamId || params.teamId || ''
   const projectId = propProjectId || params.projectId
-  const issuesQuery = useIssuesByTeam(teamId)
+  const teamIssuesQuery = useIssuesByTeam(teamId)
+  const projectIssuesQuery = useIssues(projectId ? { projectId } : undefined)
+  const issuesQuery = projectId ? projectIssuesQuery : teamIssuesQuery
   const issues = issuesQuery.data ?? []
 
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
