@@ -85,6 +85,8 @@ export function initDb() {
       FOREIGN KEY (cycle_id) REFERENCES cycles(id)
     );
 
+    CREATE INDEX IF NOT EXISTS idx_issues_team_id ON issues(team_id);
+
     CREATE TABLE IF NOT EXISTS issue_history (
       id TEXT PRIMARY KEY,
       issue_id TEXT NOT NULL,
@@ -347,16 +349,15 @@ export function getIssuesByTeam(teamId: string) {
 }
 
 export function getNextIdentifier(teamId: string): string {
-  const team = getTeam(teamId) as { key: string } | undefined
-  if (!team) throw new Error('Team not found')
+  const row = db.prepare(`
+    SELECT t.key, MAX(CAST(SUBSTR(i.identifier, INSTR(i.identifier, '-') + 1) AS INTEGER)) AS max_num
+    FROM teams t
+    LEFT JOIN issues i ON i.team_id = t.id
+    WHERE t.id = ?
+  `).get(teamId) as { key: string; max_num: number | null } | undefined
+  if (!row) throw new Error('Team not found')
 
-  const result = db.prepare('SELECT identifier FROM issues WHERE team_id = ?').all(teamId) as { identifier: string }[]
-  const numbers = result
-    .map((i) => parseInt(i.identifier.split('-')[1] || '0'))
-    .filter((n) => !isNaN(n))
-  const max = numbers.length > 0 ? Math.max(...numbers) : 0
-
-  return `${team.key}-${max + 1}`
+  return `${row.key}-${(row.max_num ?? 0) + 1}`
 }
 
 export function createIssue(data: Record<string, unknown>) {

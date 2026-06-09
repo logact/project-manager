@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Trash2 } from 'lucide-react'
+import { X, Trash2, Loader2 } from 'lucide-react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import PriorityIcon from './PriorityIcon'
@@ -46,6 +46,8 @@ export default function IssueModal({
   const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined)
   const [projectId, setProjectId] = useState<string | undefined>(undefined)
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -79,43 +81,54 @@ export default function IssueModal({
   }, [title, description, state, priority, assigneeId, projectId, selectedLabelIds, selectedTeamId])
 
   const handleSubmit = async () => {
-    if (!title.trim() || !selectedTeamId) return
+    if (!title.trim() || !selectedTeamId || isSubmitting) return
 
-    if (existingIssue) {
-      await updateIssue(existingIssue.id, {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        state,
-        priority,
-        assigneeId,
-        projectId,
-        labelIds: selectedLabelIds,
-        teamId: selectedTeamId,
-      })
-    } else {
-      await createIssue({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        state,
-        priority,
-        assigneeId,
-        projectId,
-        cycleId: undefined,
-        teamId: selectedTeamId,
-        labelIds: selectedLabelIds,
-      })
+    setIsSubmitting(true)
+    try {
+      if (existingIssue) {
+        await updateIssue(existingIssue.id, {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          state,
+          priority,
+          assigneeId,
+          projectId,
+          labelIds: selectedLabelIds,
+          teamId: selectedTeamId,
+        })
+      } else {
+        await createIssue({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          state,
+          priority,
+          assigneeId,
+          projectId,
+          cycleId: undefined,
+          teamId: selectedTeamId,
+          labelIds: selectedLabelIds,
+        })
+      }
+
+      onSaved?.()
+      onClose()
+    } finally {
+      setIsSubmitting(false)
     }
-
-    onSaved?.()
-    onClose()
   }
 
   const handleDelete = async () => {
-    if (!existingIssue) return
+    if (!existingIssue || isDeleting) return
     if (!confirm(`Delete ${existingIssue.identifier}?`)) return
-    await deleteIssue(existingIssue.id)
-    onDeleted?.()
-    onClose()
+
+    setIsDeleting(true)
+    try {
+      await deleteIssue(existingIssue.id)
+      onDeleted?.()
+      onClose()
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const toggleLabel = (labelId: string) => {
@@ -154,6 +167,7 @@ export default function IssueModal({
               placeholder="Issue title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              disabled={isSubmitting}
               className="text-base font-medium"
             />
           </div>
@@ -165,10 +179,11 @@ export default function IssueModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
+              disabled={isSubmitting}
               className={cn(
                 'w-full bg-bg-secondary border border-border rounded px-3 py-2 text-sm text-text placeholder:text-text-muted',
                 'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30',
-                'resize-none transition-colors'
+                'resize-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             />
           </div>
@@ -182,7 +197,8 @@ export default function IssueModal({
                 <select
                   value={selectedTeamId}
                   onChange={(e) => setSelectedTeamId(e.target.value)}
-                  className="w-full bg-bg-tertiary border border-border rounded px-2 py-1.5 text-sm text-text"
+                  disabled={isSubmitting}
+                  className="w-full bg-bg-tertiary border border-border rounded px-2 py-1.5 text-sm text-text disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {teams.map((team) => (
                     <option key={team.id} value={team.id}>
@@ -199,7 +215,8 @@ export default function IssueModal({
               <select
                 value={state}
                 onChange={(e) => setState(e.target.value as IssueState)}
-                className="w-full bg-bg-tertiary border border-border rounded px-2 py-1.5 text-sm text-text"
+                disabled={isSubmitting}
+                className="w-full bg-bg-tertiary border border-border rounded px-2 py-1.5 text-sm text-text disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {states.map((s) => (
                   <option key={s} value={s}>
@@ -217,8 +234,9 @@ export default function IssueModal({
                   <button
                     key={p}
                     onClick={() => setPriority(p)}
+                    disabled={isSubmitting}
                     className={cn(
-                      'p-1.5 rounded transition-colors',
+                      'p-1.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
                       priority === p ? 'bg-accent-bg' : 'hover:bg-bg-hover'
                     )}
                   >
@@ -234,7 +252,8 @@ export default function IssueModal({
               <select
                 value={assigneeId || ''}
                 onChange={(e) => setAssigneeId(e.target.value || undefined)}
-                className="w-full bg-bg-tertiary border border-border rounded px-2 py-1.5 text-sm text-text"
+                disabled={isSubmitting}
+                className="w-full bg-bg-tertiary border border-border rounded px-2 py-1.5 text-sm text-text disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="">Unassigned</option>
                 {users.map((user) => (
@@ -251,7 +270,8 @@ export default function IssueModal({
               <select
                 value={projectId || ''}
                 onChange={(e) => setProjectId(e.target.value || undefined)}
-                className="w-full bg-bg-tertiary border border-border rounded px-2 py-1.5 text-sm text-text"
+                disabled={isSubmitting}
+                className="w-full bg-bg-tertiary border border-border rounded px-2 py-1.5 text-sm text-text disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="">No project</option>
                 {projects.map((project) => (
@@ -271,8 +291,9 @@ export default function IssueModal({
                 <button
                   key={label.id}
                   onClick={() => toggleLabel(label.id)}
+                  disabled={isSubmitting}
                   className={cn(
-                    'px-2 py-0.5 rounded text-[11px] font-medium transition-all',
+                    'px-2 py-0.5 rounded text-[11px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed',
                     selectedLabelIds.includes(label.id)
                       ? 'border'
                       : 'opacity-50 hover:opacity-80 border border-transparent'
@@ -297,15 +318,22 @@ export default function IssueModal({
           </span>
           <div className="flex gap-2">
             {existingIssue && (
-              <Button variant="danger" size="sm" onClick={handleDelete}>
-                <Trash2 className="w-3.5 h-3.5" />
+              <Button variant="danger" size="sm" onClick={handleDelete} disabled={isDeleting || isSubmitting}>
+                {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting || isDeleting}>
               Cancel
             </Button>
-            <Button variant="primary" size="sm" onClick={handleSubmit} disabled={!title.trim()}>
-              {existingIssue ? 'Update' : 'Create Issue'}
+            <Button variant="primary" size="sm" onClick={handleSubmit} disabled={!title.trim() || isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>{existingIssue ? 'Updating...' : 'Creating...'}</span>
+                </>
+              ) : (
+                existingIssue ? 'Update' : 'Create Issue'
+              )}
             </Button>
           </div>
         </div>
