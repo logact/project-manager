@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, Trash2, Loader2 } from 'lucide-react'
+import { X, Trash2, Loader2, Copy, Check } from 'lucide-react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import MarkdownPreview from '../ui/MarkdownPreview'
@@ -52,6 +52,7 @@ export default function IssueModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [mode, setMode] = useState<'edit' | 'preview'>('edit')
+  const [copied, setCopied] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<RichEditorHandle>(null)
 
@@ -152,6 +153,18 @@ export default function IssueModal({
     setMode(newMode)
   }, [])
 
+  const handleCopyMarkdown = async () => {
+    const md = editorRef.current?.getMarkdown() || ''
+    if (!md.trim()) return
+    try {
+      await navigator.clipboard.writeText(md)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // ignore
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/50"
@@ -191,28 +204,49 @@ export default function IssueModal({
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-[11px] text-text-muted uppercase tracking-wider">Description</label>
-              <div className="flex rounded border border-border overflow-hidden">
+              <div className="flex items-center gap-2">
+                <div className="flex rounded border border-border overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => switchMode('edit')}
+                    disabled={isSubmitting}
+                    className={cn(
+                      'px-2 py-0.5 text-[11px] font-medium transition-colors',
+                      mode === 'edit' ? 'bg-accent-bg text-accent' : 'text-text-muted hover:text-text'
+                    )}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchMode('preview')}
+                    disabled={isSubmitting}
+                    className={cn(
+                      'px-2 py-0.5 text-[11px] font-medium transition-colors border-l border-border',
+                      mode === 'preview' ? 'bg-accent-bg text-accent' : 'text-text-muted hover:text-text'
+                    )}
+                  >
+                    Preview
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => switchMode('edit')}
+                  onClick={handleCopyMarkdown}
                   disabled={isSubmitting}
-                  className={cn(
-                    'px-2 py-0.5 text-[11px] font-medium transition-colors',
-                    mode === 'edit' ? 'bg-accent-bg text-accent' : 'text-text-muted hover:text-text'
-                  )}
+                  className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-text-muted hover:text-text transition-colors rounded border border-border"
+                  title="Copy markdown to clipboard"
                 >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => switchMode('preview')}
-                  disabled={isSubmitting}
-                  className={cn(
-                    'px-2 py-0.5 text-[11px] font-medium transition-colors border-l border-border',
-                    mode === 'preview' ? 'bg-accent-bg text-accent' : 'text-text-muted hover:text-text'
+                  {copied ? (
+                    <>
+                      <Check className="w-3 h-3 text-green-500" />
+                      <span className="text-green-500">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3" />
+                      <span>Copy</span>
+                    </>
                   )}
-                >
-                  Preview
                 </button>
               </div>
             </div>
