@@ -1,8 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { X, Trash2, Loader2 } from 'lucide-react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
+import MarkdownPreview from '../ui/MarkdownPreview'
+import RichEditor from '../ui/RichEditor'
 import PriorityIcon from './PriorityIcon'
+import type { RichEditorHandle } from '../ui/RichEditor'
 import { createIssue, updateIssue, deleteIssue, useIssue } from '../../hooks/useIssues'
 import { useTeams } from '../../hooks/useTeams'
 import { useProjects } from '../../hooks/useProjects'
@@ -48,7 +51,9 @@ export default function IssueModal({
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [mode, setMode] = useState<'edit' | 'preview'>('edit')
   const titleRef = useRef<HTMLInputElement>(null)
+  const editorRef = useRef<RichEditorHandle>(null)
 
   useEffect(() => {
     if (existingIssue) {
@@ -60,6 +65,7 @@ export default function IssueModal({
       setProjectId(existingIssue.projectId)
       setSelectedLabelIds(existingIssue.labelIds)
       setSelectedTeamId(existingIssue.teamId)
+      editorRef.current?.setMarkdown(existingIssue.description || '')
     }
   }, [existingIssue])
 
@@ -78,17 +84,18 @@ export default function IssueModal({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [title, description, state, priority, assigneeId, projectId, selectedLabelIds, selectedTeamId])
+  }, [title, state, priority, assigneeId, projectId, selectedLabelIds, selectedTeamId])
 
   const handleSubmit = async () => {
     if (!title.trim() || !selectedTeamId || isSubmitting) return
 
     setIsSubmitting(true)
     try {
+      const desc = editorRef.current?.getMarkdown().trim() || undefined
       if (existingIssue) {
         await updateIssue(existingIssue.id, {
           title: title.trim(),
-          description: description.trim() || undefined,
+          description: desc,
           state,
           priority,
           assigneeId,
@@ -99,7 +106,7 @@ export default function IssueModal({
       } else {
         await createIssue({
           title: title.trim(),
-          description: description.trim() || undefined,
+          description: desc,
           state,
           priority,
           assigneeId,
@@ -136,6 +143,14 @@ export default function IssueModal({
       prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId]
     )
   }
+
+  const switchMode = useCallback((newMode: 'edit' | 'preview') => {
+    if (newMode === 'preview') {
+      const md = editorRef.current?.getMarkdown() || ''
+      setDescription(md)
+    }
+    setMode(newMode)
+  }, [])
 
   return (
     <div
@@ -174,18 +189,49 @@ export default function IssueModal({
 
           {/* Description */}
           <div className="mb-4">
-            <textarea
-              placeholder="Add description..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              disabled={isSubmitting}
-              className={cn(
-                'w-full bg-bg-secondary border border-border rounded px-3 py-2 text-sm text-text placeholder:text-text-muted',
-                'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30',
-                'resize-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] text-text-muted uppercase tracking-wider">Description</label>
+              <div className="flex rounded border border-border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => switchMode('edit')}
+                  disabled={isSubmitting}
+                  className={cn(
+                    'px-2 py-0.5 text-[11px] font-medium transition-colors',
+                    mode === 'edit' ? 'bg-accent-bg text-accent' : 'text-text-muted hover:text-text'
+                  )}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchMode('preview')}
+                  disabled={isSubmitting}
+                  className={cn(
+                    'px-2 py-0.5 text-[11px] font-medium transition-colors border-l border-border',
+                    mode === 'preview' ? 'bg-accent-bg text-accent' : 'text-text-muted hover:text-text'
+                  )}
+                >
+                  Preview
+                </button>
+              </div>
+            </div>
+            {mode === 'edit' ? (
+              <RichEditor
+                ref={editorRef}
+                placeholder="Add description... (paste or drop images here)"
+              />
+            ) : (
+              <div className={cn(
+                'w-full bg-bg-secondary border border-border rounded px-3 py-2 text-sm min-h-[120px] max-h-[320px] overflow-y-auto'
+              )}>
+                {description.trim() ? (
+                  <MarkdownPreview markdown={description} />
+                ) : (
+                  <span className="text-text-muted italic">No description</span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Properties grid */}

@@ -64,4 +64,10 @@
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-muted);
   }
+
+  [contenteditable][data-placeholder]:empty:before {
+    content: attr(data-placeholder);
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
 }
