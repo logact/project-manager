@@ -1,0 +1,10 @@
+import AppLayout from '@/components/layout/AppLayout'
+import BoardView from '@/components/board/BoardView'
+
+export default function TeamBoardPage({ params }: { params: Promise<{ teamId: string }> }) {
+  return (
+    <AppLayout>
+      <BoardView />
+    </AppLayout>
+  )
+}
