@@ -9,7 +9,7 @@ services:
     ports:
       - "8002:8002"
     volumes:
-      - project-manager-data:/var/lib/project-manager/data
+      - /var/lib/project-manager/data:/var/lib/project-manager/data
     environment:
       - NODE_ENV=production
       - PORT=8002
@@ -21,6 +21,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
-volumes:
-  project-manager-data:
