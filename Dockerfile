@@ -39,11 +39,12 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 
-RUN mkdir -p /var/lib/project-manager/data && chown -R node:node /var/lib/project-manager
-COPY --from=builder --chown=node:node /tmp/project-manager.db /var/lib/project-manager/data/project-manager.db
+COPY --from=builder --chown=node:node /tmp/project-manager.db /app/project-manager.db
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 USER node
 
 EXPOSE 8002
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
