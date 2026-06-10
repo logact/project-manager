@@ -6,7 +6,7 @@ WORKDIR /app
 # Install openssl for Prisma runtime
 RUN apk add --no-cache openssl
 
-RUN corepack enable && corepack prepare --activate
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
