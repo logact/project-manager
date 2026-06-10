@@ -3,7 +3,7 @@ import { getUser, mapRow } from '@/lib/db'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const row = getUser(id)
+  const row = await getUser(id)
   if (!row) return NextResponse.json({ error: 'User not found' }, { status: 404 })
   return NextResponse.json(mapRow(row))
 }

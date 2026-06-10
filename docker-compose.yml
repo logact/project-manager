@@ -9,7 +9,11 @@ services:
     ports:
       - "8002:8002"
     volumes:
-      - /var/lib/project-manager/data:/var/lib/project-manager/data
+      - project-manager-data:/var/lib/project-manager/data
     environment:
       - NODE_ENV=production
       - PORT=8002
+      - DATA_DIR=/var/lib/project-manager/data
+
+volumes:
+  project-manager-data:

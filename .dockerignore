@@ -1,9 +1,13 @@
 node_modules
 dist
-data/*.db-shm
-data/*.db-wal
+data
+.next
+out
+generated
+.env*
 .git
 .gitignore
 README.md
 Dockerfile*
-docker-compose.yml
+docker-compose*.yml
+pnpm-debug.log*

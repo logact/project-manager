@@ -2,7 +2,6 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
 import {
-  initDb,
   getIssues,
   getIssue,
   getIssueByIdentifier,
@@ -16,8 +15,6 @@ import {
   deleteIssue,
   mapRow,
 } from '../lib/db.js'
-
-initDb()
 
 const server = new McpServer(
   { name: 'project-manager', version: '1.0.0' },
@@ -39,12 +36,12 @@ server.registerTool(
     annotations: { readOnlyHint: true },
   },
   async (args) => {
-    let rows = getIssues({
+    let rows = await getIssues({
       teamId: args.teamId,
       state: args.state,
       projectId: args.projectId,
       assigneeId: args.assigneeId,
-    }) as Record<string, unknown>[]
+    })
 
     if (args.priority) {
       rows = rows.filter((r) => r.priority === args.priority)
@@ -68,7 +65,7 @@ server.registerTool(
     annotations: { readOnlyHint: true },
   },
   async (args) => {
-    let row = args.id ? getIssue(args.id) || getIssueByIdentifier(args.id) : null
+    const row = args.id ? (await getIssue(args.id)) || (await getIssueByIdentifier(args.id)) : null
     if (!row) {
       return {
         content: [{ type: 'text', text: 'Issue not found' }],
@@ -99,24 +96,24 @@ server.registerTool(
     annotations: { readOnlyHint: false },
   },
   async (args) => {
-    const identifier = getNextIdentifier(args.teamId)
+    const identifier = await getNextIdentifier(args.teamId)
     const now = Date.now()
     const data = {
       id: crypto.randomUUID(),
       identifier,
       title: args.title,
       description: args.description || '',
-      team_id: args.teamId,
+      teamId: args.teamId,
       state: args.state || 'backlog',
       priority: args.priority || 'no_priority',
-      assignee_id: args.assigneeId || null,
-      project_id: args.projectId || null,
-      cycle_id: null,
-      label_ids: JSON.stringify(args.labelIds || []),
-      created_at: now,
-      updated_at: now,
+      assigneeId: args.assigneeId || null,
+      projectId: args.projectId || null,
+      cycleId: null,
+      labelIds: JSON.stringify(args.labelIds || []),
+      createdAt: now,
+      updatedAt: now,
     }
-    createIssue(data)
+    await createIssue(data)
     return {
       content: [{ type: 'text', text: `Created issue ${identifier}: ${args.title}` }],
     }
@@ -141,7 +138,7 @@ server.registerTool(
     annotations: { readOnlyHint: false },
   },
   async (args) => {
-    let issue = getIssue(args.id) || getIssueByIdentifier(args.id)
+    const issue = (await getIssue(args.id)) || (await getIssueByIdentifier(args.id))
     if (!issue) {
       return {
         content: [{ type: 'text', text: `Issue ${args.id} not found` }],
@@ -149,16 +146,16 @@ server.registerTool(
       }
     }
 
-    const changes: Record<string, unknown> = { updated_at: Date.now() }
+    const changes: Record<string, unknown> = { updatedAt: Date.now() }
     if (args.title !== undefined) changes.title = args.title
     if (args.description !== undefined) changes.description = args.description
     if (args.state !== undefined) changes.state = args.state
     if (args.priority !== undefined) changes.priority = args.priority
-    if (args.assigneeId !== undefined) changes.assignee_id = args.assigneeId
-    if (args.projectId !== undefined) changes.project_id = args.projectId
-    if (args.labelIds !== undefined) changes.label_ids = JSON.stringify(args.labelIds)
+    if (args.assigneeId !== undefined) changes.assigneeId = args.assigneeId
+    if (args.projectId !== undefined) changes.projectId = args.projectId
+    if (args.labelIds !== undefined) changes.labelIds = JSON.stringify(args.labelIds)
 
-    updateIssue((issue as { id: string }).id, changes)
+    await updateIssue(issue.id, changes as Parameters<typeof updateIssue>[1])
     return {
       content: [{ type: 'text', text: `Updated issue ${args.id}` }],
     }
@@ -176,14 +173,14 @@ server.registerTool(
     annotations: { readOnlyHint: false },
   },
   async (args) => {
-    let issue = getIssue(args.id) || getIssueByIdentifier(args.id)
+    const issue = (await getIssue(args.id)) || (await getIssueByIdentifier(args.id))
     if (!issue) {
       return {
         content: [{ type: 'text', text: `Issue ${args.id} not found` }],
         isError: true,
       }
     }
-    deleteIssue((issue as { id: string }).id)
+    await deleteIssue(issue.id)
     return {
       content: [{ type: 'text', text: `Deleted issue ${args.id}` }],
     }
@@ -199,7 +196,7 @@ server.registerTool(
     annotations: { readOnlyHint: true },
   },
   async () => {
-    const rows = getTeams()
+    const rows = await getTeams()
     return {
       content: [{ type: 'text', text: JSON.stringify(rows.map(mapRow), null, 2) }],
     }
@@ -217,7 +214,7 @@ server.registerTool(
     annotations: { readOnlyHint: true },
   },
   async (args) => {
-    const rows = getProjects(args.teamId)
+    const rows = await getProjects(args.teamId)
     return {
       content: [{ type: 'text', text: JSON.stringify(rows.map(mapRow), null, 2) }],
     }
@@ -233,7 +230,7 @@ server.registerTool(
     annotations: { readOnlyHint: true },
   },
   async () => {
-    const rows = getUsers()
+    const rows = await getUsers()
     return {
       content: [{ type: 'text', text: JSON.stringify(rows.map(mapRow), null, 2) }],
     }
@@ -251,7 +248,7 @@ server.registerTool(
     annotations: { readOnlyHint: true },
   },
   async (args) => {
-    const rows = getLabels(args.teamId)
+    const rows = await getLabels(args.teamId)
     return {
       content: [{ type: 'text', text: JSON.stringify(rows.map(mapRow), null, 2) }],
     }
@@ -267,7 +264,7 @@ server.registerTool(
     annotations: { readOnlyHint: true },
   },
   async () => {
-    const rows = getIssues({ state: 'todo' })
+    const rows = await getIssues({ state: 'todo' })
     const issues = rows.map(mapRow)
     return {
       content: [{ type: 'text', text: JSON.stringify(issues, null, 2) }],
@@ -287,7 +284,7 @@ server.registerTool(
     annotations: { readOnlyHint: false },
   },
   async (args) => {
-    let issue = getIssue(args.id) || getIssueByIdentifier(args.id)
+    const issue = (await getIssue(args.id)) || (await getIssueByIdentifier(args.id))
     if (!issue) {
       return {
         content: [{ type: 'text', text: `Issue ${args.id} not found` }],
@@ -295,15 +292,15 @@ server.registerTool(
       }
     }
 
-    const existingDesc = (issue as { description: string | null }).description || ''
+    const existingDesc = issue.description || ''
     const newDesc = existingDesc
       ? `${existingDesc}\n\n---\n\n**Agent Solution:**\n${args.solution}`
       : `**Agent Solution:**\n${args.solution}`
 
-    updateIssue((issue as { id: string }).id, {
+    await updateIssue(issue.id, {
       state: 'done',
       description: newDesc,
-      updated_at: Date.now(),
+      updatedAt: Date.now(),
     })
 
     return {

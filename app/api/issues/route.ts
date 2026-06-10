@@ -9,32 +9,30 @@ export async function GET(req: NextRequest) {
     projectId: searchParams.get('projectId') || undefined,
     assigneeId: searchParams.get('assigneeId') || undefined,
   }
-  const rows = getIssues(filters)
+  const rows = await getIssues(filters)
   return NextResponse.json(rows.map(mapRow))
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const teamId = body.teamId
-  const identifier = getNextIdentifier(teamId)
+  const identifier = await getNextIdentifier(teamId)
   const now = Date.now()
   const data = {
-    ...body,
     id: crypto.randomUUID(),
     identifier,
-    label_ids: JSON.stringify(body.labelIds || []),
-    team_id: teamId,
-    assignee_id: body.assigneeId || null,
-    project_id: body.projectId || null,
-    cycle_id: body.cycleId || null,
-    created_at: now,
-    updated_at: now,
+    title: body.title,
+    description: body.description || null,
+    state: body.state || 'backlog',
+    priority: body.priority || 'no_priority',
+    labelIds: JSON.stringify(body.labelIds || []),
+    teamId,
+    assigneeId: body.assigneeId || null,
+    projectId: body.projectId || null,
+    cycleId: body.cycleId || null,
+    createdAt: now,
+    updatedAt: now,
   }
-  delete (data as Record<string, unknown>).teamId
-  delete (data as Record<string, unknown>).labelIds
-  delete (data as Record<string, unknown>).assigneeId
-  delete (data as Record<string, unknown>).projectId
-  delete (data as Record<string, unknown>).cycleId
-  createIssue(data)
-  return NextResponse.json(mapRow(data), { status: 201 })
+  const row = await createIssue(data)
+  return NextResponse.json(mapRow(row), { status: 201 })
 }

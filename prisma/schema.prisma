@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Team {
+  id        String    @id
+  name      String
+  key       String    @unique
+  color     String
+  createdAt BigInt    @map("created_at")
+  projects  Project[]
+  cycles    Cycle[]
+  labels    Label[]
+  issues    Issue[]
+}
+
+model Project {
+  id          String   @id
+  name        String
+  description String?
+  teamId      String   @map("team_id")
+  state       String
+  startDate   BigInt?  @map("start_date")
+  targetDate  BigInt?  @map("target_date")
+  createdAt   BigInt   @map("created_at")
+  team        Team     @relation(fields: [teamId], references: [id])
+  issues      Issue[]
+}
+
+model Cycle {
+  id        String  @id
+  name      String
+  number    Int
+  teamId    String  @map("team_id")
+  startDate BigInt  @map("start_date")
+  endDate   BigInt  @map("end_date")
+  createdAt BigInt  @map("created_at")
+  team      Team    @relation(fields: [teamId], references: [id])
+  issues    Issue[]
+}
+
+model Label {
+  id        String @id
+  name      String
+  color     String
+  teamId    String @map("team_id")
+  createdAt BigInt @map("created_at")
+  team      Team   @relation(fields: [teamId], references: [id])
+}
+
+model User {
+  id            String  @id
+  name          String
+  email         String  @unique
+  avatarUrl     String? @map("avatar_url")
+  createdAt     BigInt  @map("created_at")
+  assignedIssues Issue[] @relation("AssigneeIssues")
+}
+
+model Issue {
+  id          String         @id
+  identifier  String         @unique
+  title       String
+  description String?
+  state       String
+  priority    String
+  assigneeId  String?        @map("assignee_id")
+  projectId   String?        @map("project_id")
+  cycleId     String?        @map("cycle_id")
+  teamId      String         @map("team_id")
+  labelIds    String         @default("[]") @map("label_ids")
+  createdAt   BigInt         @map("created_at")
+  updatedAt   BigInt         @map("updated_at")
+  assignee    User?          @relation("AssigneeIssues", fields: [assigneeId], references: [id])
+  project     Project?       @relation(fields: [projectId], references: [id])
+  cycle       Cycle?         @relation(fields: [cycleId], references: [id])
+  team        Team           @relation(fields: [teamId], references: [id])
+  history     IssueHistory[]
+
+  @@index([teamId])
+}
+
+model IssueHistory {
+  id        String  @id
+  issueId   String  @map("issue_id")
+  field     String
+  oldValue  String? @map("old_value")
+  newValue  String? @map("new_value")
+  createdAt BigInt  @map("created_at")
+  issue     Issue   @relation(fields: [issueId], references: [id])
+}
+
+model View {
+  id        String  @id
+  name      String
+  type      String
+  filters   String?
+  teamId    String? @map("team_id")
+  projectId String? @map("project_id")
+  createdAt BigInt  @map("created_at")
+}
