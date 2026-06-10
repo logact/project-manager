@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.14.0",
-    "@prisma/client": "^7.8.0",
+    "@prisma/client": "^6.6.0",
     "@tailwindcss/postcss": "^4.3.0",
     "@tanstack/react-query": "^5.101.0",
     "clsx": "^2.1.1",
@@ -28,13 +28,12 @@
     "zod-to-json-schema": "^3.25.0"
   },
   "devDependencies": {
-    "@prisma/config": "^7.8.0",
     "@types/marked": "^5.0.2",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "postcss": "^8.5.0",
-    "prisma": "^7.8.0",
+    "prisma": "^6.6.0",
     "tsx": "^4.19.4",
     "typescript": "~6.0.2"
   }
