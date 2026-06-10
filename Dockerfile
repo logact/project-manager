@@ -9,7 +9,8 @@ RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --store-dir /pnpm/store
 
 COPY . .
 RUN pnpm exec prisma generate
