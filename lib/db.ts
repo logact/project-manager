@@ -1,5 +1,4 @@
-import { PrismaNodeSQLite } from 'prisma-adapter-node-sqlite'
-import { PrismaClient } from '../generated/prisma/client/client'
+import { PrismaClient } from '@prisma/client'
 import path from 'path'
 import fs from 'fs'
 
@@ -11,13 +10,8 @@ if (!fs.existsSync(DATA_DIR)) {
 
 process.env.DATABASE_URL ||= `file:${path.join(DATA_DIR, 'project-manager.db')}`
 
-const adapter = new PrismaNodeSQLite(
-  { url: process.env.DATABASE_URL },
-  { timestampFormat: 'unixepoch-ms' }
-)
-
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter })
+export const prisma = globalForPrisma.prisma ?? new PrismaClient()
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 // Stubs preserved for backward-compatible imports
