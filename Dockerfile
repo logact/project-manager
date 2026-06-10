@@ -25,7 +25,7 @@ RUN pnpm build
 FROM node:20-alpine
 
 # Install wget for healthcheck and openssl for Prisma/runtime
-RUN apk add --no-cache wget openssl
+RUN apk add --no-cache wget openssl su-exec
 
 WORKDIR /app
 
@@ -42,8 +42,6 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /tmp/project-manager.db /app/project-manager.db
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
-
-USER node
 
 EXPOSE 8002
 
