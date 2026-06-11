@@ -45,7 +45,7 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target instanceof HTMLElement && e.target.isContentEditable)) return
       if (e.key === 'c' || e.key === 'C') {
         e.preventDefault()
         setIsCreating(true)
