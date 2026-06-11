@@ -125,6 +125,7 @@ export default function BoardView({ teamId: propTeamId, projectId: propProjectId
       {isCreating && (
         <IssueModal
           teamId={teamId}
+          projectId={projectId}
           onClose={() => setIsCreating(false)}
         />
       )}

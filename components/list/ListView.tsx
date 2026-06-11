@@ -149,7 +149,7 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
 
       {/* Modals */}
       {isCreating && (
-        <IssueModal teamId={teamId} onClose={() => setIsCreating(false)} />
+        <IssueModal teamId={teamId} projectId={projectId} onClose={() => setIsCreating(false)} />
       )}
       {selectedIssue && (
         <IssueModal

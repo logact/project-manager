@@ -1,13 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import Sidebar from './Sidebar'
 import CommandPalette from '../command/CommandPalette'
 import IssueModal from '../issue/IssueModal'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   const [showPalette, setShowPalette] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+
+  const projectId = pathname.match(/\/project\/([^\/]+)/)?.[1]
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -39,7 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {showCreateModal && (
-        <IssueModal onClose={() => setShowCreateModal(false)} />
+        <IssueModal projectId={projectId} onClose={() => setShowCreateModal(false)} />
       )}
     </>
   )

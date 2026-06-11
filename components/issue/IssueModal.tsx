@@ -10,7 +10,7 @@ import PriorityIcon from './PriorityIcon'
 import type { RichEditorHandle } from '../ui/RichEditor'
 import { createIssue, updateIssue, deleteIssue, useIssue } from '../../hooks/useIssues'
 import { useTeams } from '../../hooks/useTeams'
-import { useProjects } from '../../hooks/useProjects'
+import { useProjects, useProject } from '../../hooks/useProjects'
 import { useUsers } from '../../hooks/useUsers'
 import { useLabels } from '../../hooks/useLabels'
 import { cn } from '../../lib/utils'
@@ -22,12 +22,14 @@ const priorities: Priority[] = ['no_priority', 'low', 'medium', 'high', 'urgent'
 export default function IssueModal({
   issueId,
   teamId,
+  projectId: defaultProjectId,
   onClose,
   onSaved,
   onDeleted,
 }: {
   issueId?: string
   teamId?: string
+  projectId?: string
   onClose: () => void
   onSaved?: () => void
   onDeleted?: () => void
@@ -38,6 +40,8 @@ export default function IssueModal({
   const teams = teamsQuery.data ?? []
   const usersQuery = useUsers()
   const users = usersQuery.data ?? []
+  const defaultProjectQuery = useProject(defaultProjectId)
+  const defaultProject = defaultProjectQuery.data
   const [selectedTeamId, setSelectedTeamId] = useState(teamId || teams[0]?.id || '')
   const projectsQuery = useProjects(selectedTeamId)
   const projects = projectsQuery.data ?? []
@@ -75,6 +79,14 @@ export default function IssueModal({
   useEffect(() => {
     titleRef.current?.focus()
   }, [])
+
+  // Auto-fill team and project when defaultProjectId is provided
+  useEffect(() => {
+    if (defaultProjectId && defaultProject && !existingIssue) {
+      setSelectedTeamId(defaultProject.teamId)
+      setProjectId(defaultProjectId)
+    }
+  }, [defaultProjectId, defaultProject, existingIssue])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
