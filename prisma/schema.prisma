@@ -74,7 +74,7 @@ model Issue {
   cycleId     String?        @map("cycle_id")
   teamId      String         @map("team_id")
   labelIds    String         @default("[]") @map("label_ids")
-  order       Int            @default(0) @map("order")
+  order       BigInt         @default(0) @map("order")
   createdAt   BigInt         @map("created_at")
   updatedAt   BigInt         @map("updated_at")
   assignee    User?          @relation("AssigneeIssues", fields: [assigneeId], references: [id])
