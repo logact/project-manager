@@ -125,7 +125,7 @@ export function getIssues(filters?: IssueFilters) {
       ...(filters?.projectId ? { projectId: filters.projectId } : {}),
       ...(filters?.assigneeId ? { assigneeId: filters.assigneeId } : {}),
     },
-    orderBy: { updatedAt: 'desc' },
+    orderBy: { order: 'asc' },
   })
 }
 
@@ -140,7 +140,7 @@ export function getIssueByIdentifier(identifier: string) {
 export function getIssuesByTeam(teamId: string) {
   return prisma.issue.findMany({
     where: { teamId },
-    orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
+    orderBy: [{ state: 'asc' }, { order: 'asc' }],
   })
 }
 
@@ -169,6 +169,7 @@ export function createIssue(data: {
   cycleId?: string | null
   teamId: string
   labelIds: string
+  order?: number
   createdAt: number
   updatedAt: number
 }) {
@@ -187,10 +188,28 @@ export function updateIssue(
     cycleId: string | null
     teamId: string
     labelIds: string
+    order: number
     updatedAt: number
   }>
 ) {
   return prisma.issue.update({ where: { id }, data: changes })
+}
+
+export async function rebalanceIssueOrders(state: string, teamId?: string) {
+  const issues = await prisma.issue.findMany({
+    where: { state, ...(teamId ? { teamId } : {}) },
+    orderBy: { order: 'asc' },
+  })
+  if (issues.length <= 1) return
+
+  await prisma.$transaction(
+    issues.map((issue, index) =>
+      prisma.issue.update({
+        where: { id: issue.id },
+        data: { order: (index + 1) * 1024 },
+      })
+    )
+  )
 }
 
 export function deleteIssue(id: string) {

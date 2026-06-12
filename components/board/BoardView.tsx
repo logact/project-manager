@@ -6,7 +6,7 @@ import { LayoutGrid, List as ListIcon, Plus } from 'lucide-react'
 import BoardColumn from './BoardColumn'
 import IssueModal from '../issue/IssueModal'
 import Button from '../ui/Button'
-import { useIssues, useIssuesByTeam, updateIssue } from '../../hooks/useIssues'
+import { useIssues, useIssuesByTeam, reorderIssue } from '../../hooks/useIssues'
 import type { Issue, IssueState } from '../../types'
 
 const columns: { state: IssueState; title: string }[] = [
@@ -70,8 +70,11 @@ export default function BoardView({ teamId: propTeamId, projectId: propProjectId
     return map
   }, [filteredIssues])
 
-  const handleDrop = async (issueId: string, newState: IssueState) => {
-    await updateIssue(issueId, { state: newState })
+  const handleDrop = async (issueId: string, newState: IssueState, targetIndex: number) => {
+    const issue = filteredIssues.find((i) => i.id === issueId)
+    if (!issue) return
+    const targetIssues = issuesByState[newState] || []
+    await reorderIssue(issue, newState, targetIndex, targetIssues)
   }
 
   return (

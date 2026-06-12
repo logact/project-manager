@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     assigneeId: body.assigneeId || null,
     projectId: body.projectId || null,
     cycleId: body.cycleId || null,
+    order: typeof body.order === 'number' ? body.order : now,
     createdAt: now,
     updatedAt: now,
   }

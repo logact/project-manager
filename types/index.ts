@@ -60,6 +60,7 @@ export interface Issue {
   cycleId?: string
   teamId: string
   labelIds: string[]
+  order: number
   createdAt: number
   updatedAt: number
 }

@@ -46,7 +46,7 @@ export function useIssuesByTeam(teamId: string) {
   })
 }
 
-export async function createIssue(data: Omit<Issue, 'id' | 'identifier' | 'createdAt' | 'updatedAt'>) {
+export async function createIssue(data: Omit<Issue, 'id' | 'identifier' | 'createdAt' | 'updatedAt' | 'order'> & { order?: number }) {
   const res = await fetch('/api/issues', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -73,4 +73,45 @@ export async function deleteIssue(id: string) {
   const res = await fetch(`/api/issues/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error('Failed to delete issue')
   queryClient.invalidateQueries({ queryKey: ['issues'] })
+}
+
+export async function reorderIssue(
+  issue: Issue,
+  newState: IssueState,
+  targetIndex: number,
+  issuesInTargetColumn: Issue[]
+) {
+  const siblings = issuesInTargetColumn
+    .filter((i) => i.id !== issue.id)
+    .sort((a, b) => a.order - b.order)
+
+  const originalIndex = issuesInTargetColumn.findIndex((i) => i.id === issue.id)
+  let insertIndex = targetIndex
+  if (originalIndex !== -1 && targetIndex > originalIndex) {
+    insertIndex--
+  }
+
+  let newOrder: number
+  if (siblings.length === 0) {
+    newOrder = Date.now()
+  } else if (insertIndex <= 0) {
+    newOrder = siblings[0].order - 1024
+  } else if (insertIndex >= siblings.length) {
+    newOrder = siblings[siblings.length - 1].order + 1024
+  } else {
+    const prev = siblings[insertIndex - 1]
+    const next = siblings[insertIndex]
+    if (next.order - prev.order <= 1) {
+      await fetch('/api/issues/rebalance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: newState, teamId: issue.teamId }),
+      })
+      newOrder = insertIndex * 1024 + 512
+    } else {
+      newOrder = Math.floor((prev.order + next.order) / 2)
+    }
+  }
+
+  await updateIssue(issue.id, { state: newState, order: newOrder })
 }

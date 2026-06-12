@@ -18,6 +18,7 @@ export default function IssueCard({
 
   return (
     <div
+      data-issue-id={issue.id}
       onClick={onClick}
       draggable={draggable}
       className="group bg-bg-tertiary hover:bg-bg-hover border border-border rounded-md p-3 cursor-pointer transition-colors"

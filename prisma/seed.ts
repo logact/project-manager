@@ -1,6 +1,28 @@
 import { prisma } from '../lib/db.js'
 
+async function backfillIssueOrder() {
+  const issuesNeedingOrder = await prisma.issue.findMany({ where: { order: 0 } })
+  if (issuesNeedingOrder.length === 0) return
+
+  const states = ['backlog', 'todo', 'in_progress', 'done', 'canceled'] as const
+  for (const state of states) {
+    const issues = await prisma.issue.findMany({
+      where: { state, order: 0 },
+      orderBy: { updatedAt: 'desc' },
+    })
+    for (let i = 0; i < issues.length; i++) {
+      await prisma.issue.update({
+        where: { id: issues[i].id },
+        data: { order: (i + 1) * 1024 },
+      })
+    }
+  }
+  console.log(`Backfilled order for ${issuesNeedingOrder.length} existing issues.`)
+}
+
 async function main() {
+  await backfillIssueOrder()
+
   const existing = await prisma.team.findFirst()
   if (existing) {
     console.log('Database already seeded, skipping.')
@@ -117,12 +139,14 @@ async function main() {
 
   let engCounter = 0
   let desCounter = 0
+  const orderByState: Record<string, number> = {}
 
   for (const template of issueTemplates) {
     const teamId = template.projectIdx !== undefined ? projects[template.projectIdx].teamId : teams[0].id
     const isEng = teamId === teams[0].id
     const counter = isEng ? ++engCounter : ++desCounter
     const teamKey = isEng ? teams[0].key : teams[1].key
+    orderByState[template.state] = (orderByState[template.state] ?? 0) + 1024
 
     await prisma.issue.create({
       data: {
@@ -137,6 +161,7 @@ async function main() {
         cycleId: isEng ? cycles[0].id : cycles[2].id,
         teamId,
         labelIds: JSON.stringify(template.labelIdxs.map((i) => labels[i].id)),
+        order: orderByState[template.state],
         createdAt: now - Math.floor(Math.random() * 14 * day),
         updatedAt: now - Math.floor(Math.random() * 3 * day),
       },

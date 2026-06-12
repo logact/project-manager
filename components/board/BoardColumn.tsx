@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import IssueCard from '../issue/IssueCard'
 import type { Issue, IssueState } from '../../types'
 
@@ -6,20 +9,46 @@ interface BoardColumnProps {
   title: string
   issues: Issue[]
   onIssueClick: (issue: Issue) => void
-  onDrop: (issueId: string, newState: IssueState) => void
+  onDrop: (issueId: string, newState: IssueState, targetIndex: number) => void
 }
 
 export default function BoardColumn({ state, title, issues, onIssueClick, onDrop }: BoardColumnProps) {
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
+  const calculateInsertIndex = (e: React.DragEvent<HTMLDivElement>) => {
+    const cards = e.currentTarget.querySelectorAll('[data-issue-id]')
+    if (cards.length === 0) return 0
+
+    let index = 0
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect()
+      const mid = rect.top + rect.height / 2
+      if (e.clientY > mid) {
+        index++
+      } else {
+        break
+      }
+    }
+    return index
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setDragOverIndex(calculateInsertIndex(e))
+  }
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     const issueId = e.dataTransfer.getData('issueId')
     if (issueId) {
-      onDrop(issueId, state)
+      const targetIndex = dragOverIndex ?? calculateInsertIndex(e)
+      onDrop(issueId, state, targetIndex)
     }
+    setDragOverIndex(null)
   }
 
   return (
@@ -51,19 +80,27 @@ export default function BoardColumn({ state, title, issues, onIssueClick, onDrop
       <div
         className="flex-1 overflow-y-auto px-1 space-y-2"
         onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {issues.map((issue) => (
-          <div
-            key={issue.id}
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.setData('issueId', issue.id)
-            }}
-          >
-            <IssueCard issue={issue} onClick={() => onIssueClick(issue)} draggable />
+        {issues.map((issue, index) => (
+          <div key={issue.id}>
+            {dragOverIndex === index && (
+              <div className="h-0.5 bg-accent rounded my-1" />
+            )}
+            <div
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('issueId', issue.id)
+              }}
+            >
+              <IssueCard issue={issue} onClick={() => onIssueClick(issue)} draggable />
+            </div>
           </div>
         ))}
+        {dragOverIndex === issues.length && (
+          <div className="h-0.5 bg-accent rounded my-1" />
+        )}
       </div>
     </div>
   )
