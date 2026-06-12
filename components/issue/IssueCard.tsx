@@ -1,5 +1,5 @@
 import { useLabels } from '../../hooks/useLabels'
-import PriorityIcon from './PriorityIcon'
+import PriorityIcon, { priorityConfig } from './PriorityIcon'
 import AssigneeAvatar from './AssigneeAvatar'
 import type { Issue } from '../../types'
 
@@ -21,7 +21,7 @@ export default function IssueCard({
       data-issue-id={issue.id}
       onClick={onClick}
       draggable={draggable}
-      className="group bg-bg-tertiary hover:bg-bg-hover border border-border rounded-md p-3 cursor-pointer transition-colors"
+      className={`group bg-bg-tertiary hover:bg-bg-hover border border-border border-l-2 rounded-md p-3 cursor-pointer transition-colors ${priorityConfig[issue.priority].color.replace('text-', 'border-l-')}`}
     >
       {/* Top row: priority + identifier */}
       <div className="flex items-center gap-2 mb-1.5">

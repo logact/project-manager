@@ -38,6 +38,7 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
 
 COPY --from=builder --chown=node:node /tmp/project-manager.db /app/project-manager.db
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh

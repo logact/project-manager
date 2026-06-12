@@ -2,7 +2,7 @@ import { SignalHigh, SignalMedium, SignalLow, Minus } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import type { Priority } from '../../types'
 
-const priorityConfig: Record<Priority, { icon: React.ElementType; color: string; label: string }> = {
+export const priorityConfig: Record<Priority, { icon: React.ElementType; color: string; label: string }> = {
   urgent: { icon: SignalHigh, color: 'text-priority-urgent', label: 'Urgent' },
   high: { icon: SignalHigh, color: 'text-priority-high', label: 'High' },
   medium: { icon: SignalMedium, color: 'text-priority-medium', label: 'Medium' },

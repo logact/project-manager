@@ -383,6 +383,7 @@ export default function IssueModal({
             <div className="flex flex-wrap gap-1">
               {labels.map((label) => (
                 <button
+                  type="button"
                   key={label.id}
                   onClick={() => toggleLabel(label.id)}
                   disabled={isSubmitting}

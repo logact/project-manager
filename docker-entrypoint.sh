@@ -9,4 +9,9 @@ fi
 
 chown -R node:node /var/lib/project-manager/data
 
+export DATABASE_URL="${DATABASE_URL:-file:${DATA_DIR}/project-manager.db}"
+
+# Apply any pending migrations to the runtime database
+su-exec node ./node_modules/.bin/prisma migrate deploy
+
 exec su-exec node node server.js
