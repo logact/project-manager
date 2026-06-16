@@ -117,6 +117,10 @@ export function createLabel(data: { id: string; name: string; color: string; tea
   return prisma.label.create({ data })
 }
 
+export async function deleteLabel(id: string) {
+  return prisma.label.delete({ where: { id } })
+}
+
 export function getIssues(filters?: IssueFilters) {
   return prisma.issue.findMany({
     where: {

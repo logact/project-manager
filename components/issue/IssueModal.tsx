@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, Trash2, Loader2, Copy, Check } from 'lucide-react'
+import { X, Trash2, Loader2, Copy, Check, Plus, Tag } from 'lucide-react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import MarkdownPreview from '../ui/MarkdownPreview'
@@ -12,7 +12,7 @@ import { createIssue, updateIssue, deleteIssue, useIssue } from '../../hooks/use
 import { useTeams } from '../../hooks/useTeams'
 import { useProjects, useProject } from '../../hooks/useProjects'
 import { useUsers } from '../../hooks/useUsers'
-import { useLabels } from '../../hooks/useLabels'
+import { useLabels, createLabel, deleteLabel } from '../../hooks/useLabels'
 import { cn } from '../../lib/utils'
 import type { IssueState, Priority } from '../../types'
 
@@ -55,6 +55,12 @@ export default function IssueModal({
   const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined)
   const [projectId, setProjectId] = useState<string | undefined>(undefined)
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([])
+  const [showLabelDropdown, setShowLabelDropdown] = useState(false)
+  const [isCreatingLabel, setIsCreatingLabel] = useState(false)
+  const [newLabelName, setNewLabelName] = useState('')
+  const [newLabelColor, setNewLabelColor] = useState('#6366f1')
+  const labelDropdownRef = useRef<HTMLDivElement>(null)
+  const labelInputRef = useRef<HTMLInputElement>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [mode, setMode] = useState<'edit' | 'preview'>('edit')
@@ -100,6 +106,18 @@ export default function IssueModal({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [title, state, priority, assigneeId, projectId, selectedLabelIds, selectedTeamId])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (labelDropdownRef.current && !labelDropdownRef.current.contains(e.target as Node)) {
+        setShowLabelDropdown(false)
+      }
+    }
+    if (showLabelDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showLabelDropdown])
 
   const handleSubmit = async () => {
     if (!title.trim() || !selectedTeamId || isSubmitting) return
@@ -159,6 +177,37 @@ export default function IssueModal({
     )
   }
 
+  const handleCreateLabel = async () => {
+    if (!newLabelName.trim() || !selectedTeamId) return
+    setIsCreatingLabel(true)
+    try {
+      const label = await createLabel({
+        name: newLabelName.trim(),
+        color: newLabelColor,
+        teamId: selectedTeamId,
+      })
+      setSelectedLabelIds((prev) => [...prev, label.id])
+      setNewLabelName('')
+      setNewLabelColor('#6366f1')
+      labelInputRef.current?.focus()
+    } finally {
+      setIsCreatingLabel(false)
+    }
+  }
+
+  const handleDeleteLabel = async (labelId: string) => {
+    if (!confirm('Delete this label?')) return
+    await deleteLabel(labelId)
+    setSelectedLabelIds((prev) => prev.filter((id) => id !== labelId))
+  }
+
+  const toggleLabelDropdown = () => {
+    setShowLabelDropdown((prev) => !prev)
+    if (!showLabelDropdown) {
+      setTimeout(() => labelInputRef.current?.focus(), 100)
+    }
+  }
+
   const switchMode = useCallback((newMode: 'edit' | 'preview') => {
     if (newMode === 'preview') {
       const md = editorRef.current?.getMarkdown() || ''
@@ -169,14 +218,27 @@ export default function IssueModal({
 
   const handleCopyMarkdown = async () => {
     const md = editorRef.current?.getMarkdown() || ''
-    if (!md.trim()) return
+    const labelNames = labels
+      .filter((label) => selectedLabelIds.includes(label.id))
+      .map((label) => label.name)
+      .join(', ')
+    const issueId = existingIssue?.identifier || ''
+    const formatted = [
+      issueId ? `${issueId}:` : '',
+      labelNames,
+      title ? `${title}:` : '',
+      md,
+    ]
+      .filter((line) => line !== undefined)
+      .join('\n')
+    if (!formatted.trim()) return
     try {
-      await navigator.clipboard.writeText(md)
+      await navigator.clipboard.writeText(formatted)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
       const textarea = document.createElement('textarea')
-      textarea.value = md
+      textarea.value = formatted
       textarea.style.position = 'fixed'
       textarea.style.opacity = '0'
       document.body.appendChild(textarea)
@@ -387,31 +449,158 @@ export default function IssueModal({
           </div>
 
           {/* Labels */}
-          <div className="mt-4">
+          <div className="mt-4 relative" ref={labelDropdownRef}>
             <label className="text-[11px] text-text-muted uppercase tracking-wider mb-1 block">Labels</label>
-            <div className="flex flex-wrap gap-1">
-              {labels.map((label) => (
-                <button
-                  type="button"
-                  key={label.id}
-                  onClick={() => toggleLabel(label.id)}
-                  disabled={isSubmitting}
-                  className={cn(
-                    'px-2 py-0.5 rounded text-[11px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed',
-                    selectedLabelIds.includes(label.id)
-                      ? 'border'
-                      : 'opacity-50 hover:opacity-80 border border-transparent'
+            <button
+              type="button"
+              onClick={toggleLabelDropdown}
+              disabled={isSubmitting}
+              className="w-full bg-bg-tertiary border border-border rounded px-2 py-1.5 text-sm text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-text-muted" />
+                {selectedLabelIds.length === 0 ? (
+                  <span className="text-text-muted">Select labels...</span>
+                ) : (
+                  <span className="text-text">
+                    {selectedLabelIds.length} label{selectedLabelIds.length > 1 ? 's' : ''} selected
+                  </span>
+                )}
+              </span>
+              <div className="flex items-center gap-1">
+                {selectedLabelIds.length > 0 && (
+                  <div className="flex -space-x-1">
+                    {labels
+                      .filter((l) => selectedLabelIds.includes(l.id))
+                      .slice(0, 3)
+                      .map((l) => (
+                        <div
+                          key={l.id}
+                          className="w-3 h-3 rounded-full border border-bg-tertiary"
+                          style={{ backgroundColor: l.color }}
+                        />
+                      ))}
+                  </div>
+                )}
+                <svg className={`w-4 h-4 text-text-muted transition-transform ${showLabelDropdown ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </button>
+
+            {showLabelDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-bg-secondary border border-border rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
+                <div className="p-2 border-b border-border">
+                  <div className="flex gap-1">
+                    <input
+                      ref={labelInputRef}
+                      type="text"
+                      value={newLabelName}
+                      onChange={(e) => setNewLabelName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleCreateLabel()
+                        }
+                      }}
+                      placeholder="Create new label..."
+                      disabled={isCreatingLabel}
+                      className="flex-1 bg-bg-tertiary border border-border rounded px-2 py-1 text-xs text-text placeholder:text-text-muted disabled:opacity-50"
+                    />
+                    <input
+                      type="color"
+                      value={newLabelColor}
+                      onChange={(e) => setNewLabelColor(e.target.value)}
+                      className="w-7 h-7 rounded cursor-pointer border-0 bg-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreateLabel}
+                      disabled={!newLabelName.trim() || isCreatingLabel}
+                      className="p-1.5 rounded bg-accent-bg text-accent hover:bg-accent-bg/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isCreatingLabel ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Plus className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  {labels.length === 0 ? (
+                    <div className="px-3 py-4 text-center text-xs text-text-muted">
+                      No labels yet. Create one above.
+                    </div>
+                  ) : (
+                    labels.map((label) => (
+                      <div
+                        key={label.id}
+                        className="flex items-center justify-between px-2 py-1.5 hover:bg-bg-hover group"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleLabel(label.id)}
+                          className="flex items-center gap-2 flex-1 text-left"
+                        >
+                          <div
+                            className={`w-3.5 h-3.5 rounded flex items-center justify-center transition-all ${
+                              selectedLabelIds.includes(label.id)
+                                ? 'bg-accent-bg'
+                                : 'border border-border'
+                            }`}
+                          >
+                            {selectedLabelIds.includes(label.id) && (
+                              <Check className="w-2.5 h-2.5 text-accent" />
+                            )}
+                          </div>
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: label.color }}
+                          />
+                          <span className="text-xs text-text">{label.name}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteLabel(label.id)}
+                          className="p-1 rounded text-text-muted hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Delete label"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))
                   )}
-                  style={{
-                    backgroundColor: label.color + '20',
-                    color: label.color,
-                    borderColor: selectedLabelIds.includes(label.id) ? label.color : 'transparent',
-                  }}
-                >
-                  {label.name}
-                </button>
-              ))}
-            </div>
+                </div>
+              </div>
+            )}
+
+            {selectedLabelIds.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {labels
+                  .filter((label) => selectedLabelIds.includes(label.id))
+                  .map((label) => (
+                    <span
+                      key={label.id}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium"
+                      style={{
+                        backgroundColor: label.color + '20',
+                        color: label.color,
+                      }}
+                    >
+                      {label.name}
+                      <button
+                        type="button"
+                        onClick={() => toggleLabel(label.id)}
+                        disabled={isSubmitting}
+                        className="hover:opacity-70 disabled:cursor-not-allowed"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+              </div>
+            )}
           </div>
         </div>
 

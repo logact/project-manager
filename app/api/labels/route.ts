@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getLabels, createLabel, mapRow } from '@/lib/db'
+import { getLabels, createLabel, deleteLabel, mapRow } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -19,4 +19,14 @@ export async function POST(req: NextRequest) {
   }
   const row = await createLabel(data)
   return NextResponse.json(mapRow(row), { status: 201 })
+}
+
+export async function DELETE(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  if (!id) {
+    return NextResponse.json({ error: 'id is required' }, { status: 400 })
+  }
+  await deleteLabel(id)
+  return NextResponse.json({ success: true })
 }

@@ -25,3 +25,11 @@ export async function createLabel(data: Omit<Label, 'id' | 'createdAt'>) {
   queryClient.invalidateQueries({ queryKey: ['labels'] })
   return result
 }
+
+export async function deleteLabel(id: string) {
+  const res = await fetch(`/api/labels?id=${id}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) throw new Error('Failed to delete label')
+  queryClient.invalidateQueries({ queryKey: ['labels'] })
+}
