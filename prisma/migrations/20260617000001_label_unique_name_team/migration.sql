@@ -5,7 +5,7 @@ WITH ranked AS (
   FROM Label
 )
 UPDATE Label
-SET name = name || ' (' || (ranked.rn - 1) || ')'
+SET name = Label.name || ' (' || (ranked.rn - 1) || ')'
 FROM ranked
 WHERE Label.id = ranked.id
   AND ranked.rn > 1;
