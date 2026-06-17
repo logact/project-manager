@@ -12,6 +12,13 @@ chown -R node:node /var/lib/project-manager/data
 export DATABASE_URL="${DATABASE_URL:-file:${DATA_DIR}/project-manager.db}"
 
 # Apply any pending migrations to the runtime database
-su-exec node ./node_modules/.bin/prisma migrate deploy
+# If a migration is stuck, clear it and retry
+if ! su-exec node ./node_modules/.bin/prisma migrate deploy; then
+  echo "Migration deploy failed, clearing stuck migrations..."
+  sqlite3 "${DATA_DIR}/project-manager.db" \
+    "DELETE FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL;"
+  echo "Retrying migration deploy..."
+  su-exec node ./node_modules/.bin/prisma migrate deploy
+fi
 
 exec su-exec node node server.js

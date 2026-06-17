@@ -25,7 +25,7 @@ RUN pnpm build
 FROM node:20-alpine
 
 # Install wget for healthcheck and openssl for Prisma/runtime
-RUN apk add --no-cache wget openssl su-exec
+RUN apk add --no-cache wget openssl su-exec sqlite
 
 WORKDIR /app
 
