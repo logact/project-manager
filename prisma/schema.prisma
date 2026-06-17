@@ -51,6 +51,8 @@ model Label {
   teamId    String @map("team_id")
   createdAt BigInt @map("created_at")
   team      Team   @relation(fields: [teamId], references: [id])
+
+  @@unique([name, teamId])
 }
 
 model User {

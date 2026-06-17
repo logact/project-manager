@@ -118,7 +118,11 @@ export function getLabels(teamId?: string) {
 }
 
 export function createLabel(data: { id: string; name: string; color: string; teamId: string; createdAt: number }) {
-  return prisma.label.create({ data })
+  return prisma.label.upsert({
+    where: { name_teamId: { name: data.name, teamId: data.teamId } },
+    update: { color: data.color },
+    create: data,
+  })
 }
 
 export async function deleteLabel(id: string) {
