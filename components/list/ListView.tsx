@@ -31,7 +31,6 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
   const issuesQuery = projectId ? projectIssuesQuery : teamIssuesQuery
   const issues = issuesQuery.data ?? []
 
-  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [sortField, setSortField] = useState<'priority' | 'updatedAt' | 'createdAt'>('updatedAt')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -141,7 +140,7 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
             <ListRow
               key={issue.id}
               issue={issue}
-              onClick={() => setSelectedIssue(issue)}
+              onClick={() => router.push(`/issue/${issue.id}`)}
             />
           ))}
         </div>
@@ -150,13 +149,6 @@ export default function ListView({ teamId: propTeamId, projectId: propProjectId,
       {/* Modals */}
       {isCreating && (
         <IssueModal teamId={teamId} projectId={projectId} onClose={() => setIsCreating(false)} />
-      )}
-      {selectedIssue && (
-        <IssueModal
-          issueId={selectedIssue.id}
-          onClose={() => setSelectedIssue(null)}
-          onDeleted={() => setSelectedIssue(null)}
-        />
       )}
     </div>
   )

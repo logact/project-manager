@@ -3,9 +3,13 @@ import path from 'path'
 import fs from 'fs'
 
 const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data')
+const IMAGES_DIR = path.join(DATA_DIR, 'images')
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true })
+}
+if (!fs.existsSync(IMAGES_DIR)) {
+  fs.mkdirSync(IMAGES_DIR, { recursive: true })
 }
 
 process.env.DATABASE_URL ||= `file:${path.join(DATA_DIR, 'project-manager.db')}`

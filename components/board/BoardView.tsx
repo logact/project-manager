@@ -33,7 +33,6 @@ export default function BoardView({ teamId: propTeamId, projectId: propProjectId
   const issuesQuery = projectId ? projectIssuesQuery : teamIssuesQuery
   const issues = issuesQuery.data ?? []
 
-  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
   const [isCreating, setIsCreating] = useState(false)
 
   const listPath = useMemo(() => {
@@ -117,7 +116,7 @@ export default function BoardView({ teamId: propTeamId, projectId: propProjectId
               state={col.state}
               title={col.title}
               issues={issuesByState[col.state] || []}
-              onIssueClick={setSelectedIssue}
+              onIssueClick={(issue) => router.push(`/issue/${issue.id}`)}
               onDrop={handleDrop}
             />
           ))}
@@ -130,13 +129,6 @@ export default function BoardView({ teamId: propTeamId, projectId: propProjectId
           teamId={teamId}
           projectId={projectId}
           onClose={() => setIsCreating(false)}
-        />
-      )}
-      {selectedIssue && (
-        <IssueModal
-          issueId={selectedIssue.id}
-          onClose={() => setSelectedIssue(null)}
-          onDeleted={() => setSelectedIssue(null)}
         />
       )}
     </div>

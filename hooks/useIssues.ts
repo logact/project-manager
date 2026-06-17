@@ -2,6 +2,37 @@ import { useQuery } from '@tanstack/react-query'
 import type { Issue, IssueState } from '../types'
 import { queryClient } from '../lib/queryClient'
 
+const IMAGE_REGEX = /!\[([^\]]*)\]\(data:image\/(png|jpeg|gif|webp|svg\+xml);base64,([A-Za-z0-9+/=]+)\)/g
+
+async function extractAndUploadImages(markdown: string): Promise<string> {
+  const matches = Array.from(markdown.matchAll(IMAGE_REGEX))
+  if (matches.length === 0) return markdown
+
+  let result = markdown
+  for (const match of matches) {
+    const [fullMatch, alt, ext, data] = match
+    const mime = `image/${ext === 'svg+xml' ? 'svg+xml' : ext}`
+    const binary = atob(data)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+
+    const blob = new Blob([bytes], { type: mime })
+    const formData = new FormData()
+    formData.append('file', blob, `image.${ext === 'svg+xml' ? 'svg' : ext}`)
+
+    try {
+      const res = await fetch('/api/images/upload', { method: 'POST', body: formData })
+      if (res.ok) {
+        const { url } = await res.json()
+        result = result.replace(fullMatch, `![${alt}](${url})`)
+      }
+    } catch {
+      // Keep original base64 if upload fails
+    }
+  }
+  return result
+}
+
 export function useIssues(filters?: { teamId?: string; state?: IssueState; projectId?: string; assigneeId?: string }) {
   return useQuery({
     queryKey: ['issues', filters],
@@ -47,10 +78,11 @@ export function useIssuesByTeam(teamId: string) {
 }
 
 export async function createIssue(data: Omit<Issue, 'id' | 'identifier' | 'createdAt' | 'updatedAt' | 'order'> & { order?: number }) {
+  const description = data.description ? await extractAndUploadImages(data.description) : data.description
   const res = await fetch('/api/issues', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, description }),
   })
   if (!res.ok) throw new Error('Failed to create issue')
   const result = await res.json()
@@ -59,10 +91,11 @@ export async function createIssue(data: Omit<Issue, 'id' | 'identifier' | 'creat
 }
 
 export async function updateIssue(id: string, changes: Partial<Issue>) {
+  const description = changes.description ? await extractAndUploadImages(changes.description) : changes.description
   const res = await fetch(`/api/issues/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(changes),
+    body: JSON.stringify({ ...changes, description }),
   })
   if (!res.ok) throw new Error('Failed to update issue')
   queryClient.invalidateQueries({ queryKey: ['issues'] })
