@@ -12,6 +12,7 @@ dist
 dist-ssr
 /data
 /data/images
+prisma/data/*.db
 /generated
 *.local
 
