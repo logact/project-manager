@@ -12,6 +12,7 @@ import {
   Plus,
   Inbox,
   CircleDot,
+  Archive,
   Trash2,
 } from 'lucide-react'
 import TimerWidget from '../timer/TimerWidget'
@@ -118,6 +119,21 @@ export default function Sidebar() {
             >
               <CircleDot className="w-4 h-4" />
               <span>Active</span>
+            </Link>
+          </div>
+
+          <div className="px-2 mb-2">
+            <Link
+              href="/archived"
+              className={cn(
+                'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
+                isActive('/archived')
+                  ? 'bg-bg-tertiary text-text'
+                  : 'text-text-secondary hover:bg-bg-hover hover:text-text'
+              )}
+            >
+              <Archive className="w-4 h-4" />
+              <span>Archived</span>
             </Link>
           </div>
 

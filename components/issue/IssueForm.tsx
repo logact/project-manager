@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Trash2, Loader2, Copy, Check, Plus, Tag, X, Link } from 'lucide-react'
+import { Trash2, Loader2, Copy, Check, Plus, Tag, X, Link, Archive, ArchiveRestore } from 'lucide-react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import MarkdownPreview from '../ui/MarkdownPreview'
 import RichEditor from '../ui/RichEditor'
 import PriorityIcon from './PriorityIcon'
 import type { RichEditorHandle } from '../ui/RichEditor'
-import { createIssue, updateIssue, deleteIssue, useIssue } from '../../hooks/useIssues'
+import { createIssue, updateIssue, deleteIssue, archiveIssue, unarchiveIssue, useIssue } from '../../hooks/useIssues'
 import { useTeams } from '../../hooks/useTeams'
 import { useProjects, useProject } from '../../hooks/useProjects'
 import { useUsers } from '../../hooks/useUsers'
@@ -168,6 +168,29 @@ export default function IssueForm({
     }
   }
 
+  const handleArchive = async () => {
+    if (!existingIssue || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      await archiveIssue(existingIssue.id)
+      onSaved?.()
+      onNavigateBack?.()
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleUnarchive = async () => {
+    if (!existingIssue || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      await unarchiveIssue(existingIssue.id)
+      onSaved?.()
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const toggleLabel = (labelId: string) => {
     setSelectedLabelIds((prev) =>
       prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId]
@@ -283,9 +306,20 @@ export default function IssueForm({
         </div>
         <div className="flex items-center gap-2">
           {existingIssue && (
-            <Button variant="danger" size="sm" onClick={handleDelete} disabled={isDeleting || isSubmitting}>
-              {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            </Button>
+            <>
+              {existingIssue.archived ? (
+                <Button variant="ghost" size="sm" onClick={handleUnarchive} disabled={isSubmitting} title="Restore from archive">
+                  {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArchiveRestore className="w-3.5 h-3.5" />}
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={handleArchive} disabled={isSubmitting} title="Archive issue">
+                  {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
+                </Button>
+              )}
+              <Button variant="danger" size="sm" onClick={handleDelete} disabled={isDeleting || isSubmitting}>
+                {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              </Button>
+            </>
           )}
           <Button variant="primary" size="sm" onClick={handleSubmit} disabled={!title.trim() || isSubmitting}>
             {isSubmitting ? (

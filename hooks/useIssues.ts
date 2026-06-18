@@ -33,7 +33,7 @@ async function extractAndUploadImages(markdown: string): Promise<string> {
   return result
 }
 
-export function useIssues(filters?: { teamId?: string; state?: IssueState; projectId?: string; assigneeId?: string }) {
+export function useIssues(filters?: { teamId?: string; state?: IssueState; projectId?: string; assigneeId?: string; archived?: boolean }) {
   return useQuery({
     queryKey: ['issues', filters],
     queryFn: async () => {
@@ -42,6 +42,7 @@ export function useIssues(filters?: { teamId?: string; state?: IssueState; proje
       if (filters?.state) params.set('state', filters.state)
       if (filters?.projectId) params.set('projectId', filters.projectId)
       if (filters?.assigneeId) params.set('assigneeId', filters.assigneeId)
+      if (filters?.archived !== undefined) params.set('archived', String(filters.archived))
 
       const url = `/api/issues${params.toString() ? '?' + params.toString() : ''}`
       const res = await fetch(url)
@@ -77,7 +78,7 @@ export function useIssuesByTeam(teamId: string) {
   })
 }
 
-export async function createIssue(data: Omit<Issue, 'id' | 'identifier' | 'createdAt' | 'updatedAt' | 'order'> & { order?: number }) {
+export async function createIssue(data: Omit<Issue, 'id' | 'identifier' | 'createdAt' | 'updatedAt' | 'order' | 'archived' | 'archivedAt'> & { order?: number }) {
   const description = data.description ? await extractAndUploadImages(data.description) : data.description
   const res = await fetch('/api/issues', {
     method: 'POST',
@@ -105,6 +106,26 @@ export async function updateIssue(id: string, changes: Partial<Issue>) {
 export async function deleteIssue(id: string) {
   const res = await fetch(`/api/issues/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error('Failed to delete issue')
+  queryClient.invalidateQueries({ queryKey: ['issues'] })
+}
+
+export async function archiveIssue(id: string) {
+  const res = await fetch(`/api/issues/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'archive' }),
+  })
+  if (!res.ok) throw new Error('Failed to archive issue')
+  queryClient.invalidateQueries({ queryKey: ['issues'] })
+}
+
+export async function unarchiveIssue(id: string) {
+  const res = await fetch(`/api/issues/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'unarchive' }),
+  })
+  if (!res.ok) throw new Error('Failed to unarchive issue')
   queryClient.invalidateQueries({ queryKey: ['issues'] })
 }
 

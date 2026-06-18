@@ -55,6 +55,8 @@ export interface Issue {
   description?: string
   state: IssueState
   priority: Priority
+  archived: boolean
+  archivedAt?: number
   assigneeId?: string
   projectId?: string
   cycleId?: string

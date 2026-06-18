@@ -71,6 +71,8 @@ model Issue {
   description String?
   state       String
   priority    String
+  archived    Boolean        @default(false)
+  archivedAt  BigInt?        @map("archived_at")
   assigneeId  String?        @map("assignee_id")
   projectId   String?        @map("project_id")
   cycleId     String?        @map("cycle_id")

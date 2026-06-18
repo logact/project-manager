@@ -13,6 +13,8 @@ import {
   createIssue,
   updateIssue,
   deleteIssue,
+  archiveIssue,
+  unarchiveIssue,
   mapRow,
 } from '../lib/db.js'
 
@@ -25,13 +27,14 @@ const server = new McpServer(
 server.registerTool(
   'list_issues',
   {
-    description: 'List all issues with optional filters. Returns issues matching the criteria.',
+    description: 'List all issues with optional filters. Returns issues matching the criteria. By default excludes archived issues.',
     inputSchema: z.object({
       state: z.enum(['backlog', 'todo', 'in_progress', 'done', 'canceled']).optional().describe('Filter by issue state'),
       teamId: z.string().optional().describe('Filter by team ID'),
       projectId: z.string().optional().describe('Filter by project ID'),
       assigneeId: z.string().optional().describe('Filter by assignee user ID'),
       priority: z.enum(['no_priority', 'low', 'medium', 'high', 'urgent']).optional().describe('Filter by priority'),
+      archived: z.boolean().optional().describe('Filter by archived status. Default: false (excludes archived)'),
     }),
     annotations: { readOnlyHint: true },
   },
@@ -41,6 +44,7 @@ server.registerTool(
       state: args.state,
       projectId: args.projectId,
       assigneeId: args.assigneeId,
+      archived: args.archived,
     })
 
     if (args.priority) {
@@ -183,6 +187,56 @@ server.registerTool(
     await deleteIssue(issue.id)
     return {
       content: [{ type: 'text', text: `Deleted issue ${args.id}` }],
+    }
+  }
+)
+
+// --- archive_issue ---
+server.registerTool(
+  'archive_issue',
+  {
+    description: 'Archive an issue. The issue retains its current state (todo, done, etc.) but is hidden from normal views.',
+    inputSchema: z.object({
+      id: z.string().describe('Issue UUID or identifier like "ENG-1"'),
+    }),
+    annotations: { readOnlyHint: false },
+  },
+  async (args) => {
+    const issue = (await getIssue(args.id)) || (await getIssueByIdentifier(args.id))
+    if (!issue) {
+      return {
+        content: [{ type: 'text', text: `Issue ${args.id} not found` }],
+        isError: true,
+      }
+    }
+    await archiveIssue(issue.id)
+    return {
+      content: [{ type: 'text', text: `Archived issue ${args.id} (state: ${issue.state})` }],
+    }
+  }
+)
+
+// --- unarchive_issue ---
+server.registerTool(
+  'unarchive_issue',
+  {
+    description: 'Restore an archived issue back to active views.',
+    inputSchema: z.object({
+      id: z.string().describe('Issue UUID or identifier like "ENG-1"'),
+    }),
+    annotations: { readOnlyHint: false },
+  },
+  async (args) => {
+    const issue = (await getIssue(args.id)) || (await getIssueByIdentifier(args.id))
+    if (!issue) {
+      return {
+        content: [{ type: 'text', text: `Issue ${args.id} not found` }],
+        isError: true,
+      }
+    }
+    await unarchiveIssue(issue.id)
+    return {
+      content: [{ type: 'text', text: `Unarchived issue ${args.id}` }],
     }
   }
 )

@@ -27,6 +27,7 @@ export interface IssueFilters {
   state?: string
   projectId?: string
   assigneeId?: string
+  archived?: boolean
 }
 
 export function getTeams() {
@@ -136,6 +137,7 @@ export function getIssues(filters?: IssueFilters) {
       ...(filters?.state ? { state: filters.state } : {}),
       ...(filters?.projectId ? { projectId: filters.projectId } : {}),
       ...(filters?.assigneeId ? { assigneeId: filters.assigneeId } : {}),
+      ...(filters?.archived !== undefined ? { archived: filters.archived } : { archived: false }),
     },
     orderBy: { order: 'asc' },
   })
@@ -151,7 +153,7 @@ export function getIssueByIdentifier(identifier: string) {
 
 export function getIssuesByTeam(teamId: string) {
   return prisma.issue.findMany({
-    where: { teamId },
+    where: { teamId, archived: false },
     orderBy: [{ state: 'asc' }, { order: 'asc' }],
   })
 }
@@ -229,6 +231,20 @@ export function deleteIssue(id: string) {
     prisma.issueHistory.deleteMany({ where: { issueId: id } }),
     prisma.issue.delete({ where: { id } }),
   ])
+}
+
+export function archiveIssue(id: string) {
+  return prisma.issue.update({
+    where: { id },
+    data: { archived: true, archivedAt: Date.now(), updatedAt: Date.now() },
+  })
+}
+
+export function unarchiveIssue(id: string) {
+  return prisma.issue.update({
+    where: { id },
+    data: { archived: false, archivedAt: null, updatedAt: Date.now() },
+  })
 }
 
 export async function deleteProject(id: string) {

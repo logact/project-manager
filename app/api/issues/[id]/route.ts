@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getIssue, getIssueByIdentifier, updateIssue, deleteIssue, mapRow } from '@/lib/db'
+import { getIssue, getIssueByIdentifier, updateIssue, deleteIssue, archiveIssue, unarchiveIssue, mapRow } from '@/lib/db'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -11,6 +11,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await req.json()
+
+  if (body.action === 'archive') {
+    const row = await archiveIssue(id)
+    return NextResponse.json(mapRow(row))
+  }
+  if (body.action === 'unarchive') {
+    const row = await unarchiveIssue(id)
+    return NextResponse.json(mapRow(row))
+  }
+
   const changes: Record<string, unknown> = { ...body, updatedAt: Date.now() }
 
   if (changes.labelIds !== undefined) {
@@ -20,6 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   delete changes.id
   delete changes.identifier
   delete changes.createdAt
+  delete changes.action
 
   await updateIssue(id, changes as Parameters<typeof updateIssue>[1])
   const row = await getIssue(id)

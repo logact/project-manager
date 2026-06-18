@@ -3,11 +3,13 @@ import { getIssues, createIssue, getNextIdentifier, mapRow } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
+  const archivedParam = searchParams.get('archived')
   const filters = {
     teamId: searchParams.get('teamId') || undefined,
     state: searchParams.get('state') || undefined,
     projectId: searchParams.get('projectId') || undefined,
     assigneeId: searchParams.get('assigneeId') || undefined,
+    ...(archivedParam !== null ? { archived: archivedParam === 'true' } : {}),
   }
   const rows = await getIssues(filters)
   return NextResponse.json(rows.map(mapRow))
