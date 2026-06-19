@@ -49,11 +49,36 @@ async function main() {
   ])
 
   const labels = await prisma.$transaction([
-    prisma.label.create({ data: { id: crypto.randomUUID(), name: 'Bug', color: '#d13b3b', teamId: teams[0].id, createdAt: now } }),
-    prisma.label.create({ data: { id: crypto.randomUUID(), name: 'Feature', color: '#4da35a', teamId: teams[0].id, createdAt: now } }),
-    prisma.label.create({ data: { id: crypto.randomUUID(), name: 'Improvement', color: '#5e6ad2', teamId: teams[0].id, createdAt: now } }),
-    prisma.label.create({ data: { id: crypto.randomUUID(), name: 'Design', color: '#e8a838', teamId: teams[1].id, createdAt: now } }),
-    prisma.label.create({ data: { id: crypto.randomUUID(), name: 'Research', color: '#7c4dff', teamId: teams[1].id, createdAt: now } }),
+    prisma.label.upsert({
+      where: { name_teamId: { name: 'Bug', teamId: teams[0].id } },
+      update: { isSystem: true, color: '#d13b3b' },
+      create: { id: crypto.randomUUID(), name: 'Bug', color: '#d13b3b', isSystem: true, teamId: teams[0].id, createdAt: now },
+    }),
+    prisma.label.upsert({
+      where: { name_teamId: { name: 'Feature', teamId: teams[0].id } },
+      update: { isSystem: true, color: '#4da35a' },
+      create: { id: crypto.randomUUID(), name: 'Feature', color: '#4da35a', isSystem: true, teamId: teams[0].id, createdAt: now },
+    }),
+    prisma.label.upsert({
+      where: { name_teamId: { name: 'Refactor', teamId: teams[0].id } },
+      update: { isSystem: true, color: '#8d6e63' },
+      create: { id: crypto.randomUUID(), name: 'Refactor', color: '#8d6e63', isSystem: true, teamId: teams[0].id, createdAt: now },
+    }),
+    prisma.label.upsert({
+      where: { name_teamId: { name: 'Improvement', teamId: teams[0].id } },
+      update: {},
+      create: { id: crypto.randomUUID(), name: 'Improvement', color: '#5e6ad2', teamId: teams[0].id, createdAt: now },
+    }),
+    prisma.label.upsert({
+      where: { name_teamId: { name: 'Design', teamId: teams[1].id } },
+      update: {},
+      create: { id: crypto.randomUUID(), name: 'Design', color: '#e8a838', teamId: teams[1].id, createdAt: now },
+    }),
+    prisma.label.upsert({
+      where: { name_teamId: { name: 'Research', teamId: teams[1].id } },
+      update: {},
+      create: { id: crypto.randomUUID(), name: 'Research', color: '#7c4dff', teamId: teams[1].id, createdAt: now },
+    }),
   ])
 
   const projects = await prisma.$transaction([

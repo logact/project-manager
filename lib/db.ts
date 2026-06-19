@@ -118,15 +118,19 @@ export function getLabels(teamId?: string) {
   })
 }
 
-export function createLabel(data: { id: string; name: string; color: string; teamId: string; createdAt: number }) {
+export function createLabel(data: { id: string; name: string; color: string; isSystem?: boolean; teamId: string; createdAt: number }) {
   return prisma.label.upsert({
     where: { name_teamId: { name: data.name, teamId: data.teamId } },
-    update: { color: data.color },
-    create: data,
+    update: { color: data.color, isSystem: data.isSystem ?? false },
+    create: { ...data, isSystem: data.isSystem ?? false },
   })
 }
 
 export async function deleteLabel(id: string) {
+  const label = await prisma.label.findUnique({ where: { id } }) as { isSystem?: boolean } | null
+  if (label?.isSystem) {
+    throw new Error('Cannot delete system label')
+  }
   return prisma.label.delete({ where: { id } })
 }
 

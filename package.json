@@ -9,6 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "migrate": "DATABASE_URL=\"file:../data/project-manager.db\" prisma migrate deploy",
+    "db:seed": "DATABASE_URL=\"file:../data/project-manager.db\" tsx prisma/seed.ts",
     "mcp": "tsx mcp/mcp-entry.ts"
   },
   "dependencies": {

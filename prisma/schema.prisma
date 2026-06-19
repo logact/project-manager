@@ -45,12 +45,13 @@ model Cycle {
 }
 
 model Label {
-  id        String @id
+  id        String  @id
   name      String
   color     String
-  teamId    String @map("team_id")
-  createdAt BigInt @map("created_at")
-  team      Team   @relation(fields: [teamId], references: [id])
+  isSystem  Boolean @default(false) @map("is_system")
+  teamId    String  @map("team_id")
+  createdAt BigInt  @map("created_at")
+  team      Team    @relation(fields: [teamId], references: [id])
 
   @@unique([name, teamId])
 }

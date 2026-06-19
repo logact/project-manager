@@ -27,6 +27,13 @@ export async function DELETE(req: NextRequest) {
   if (!id) {
     return NextResponse.json({ error: 'id is required' }, { status: 400 })
   }
-  await deleteLabel(id)
+  try {
+    await deleteLabel(id)
+  } catch (e) {
+    if (e instanceof Error && e.message === 'Cannot delete system label') {
+      return NextResponse.json({ error: e.message }, { status: 403 })
+    }
+    throw e
+  }
   return NextResponse.json({ success: true })
 }

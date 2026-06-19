@@ -14,7 +14,7 @@ export function useLabels(teamId?: string) {
   })
 }
 
-export async function createLabel(data: Omit<Label, 'id' | 'createdAt'>) {
+export async function createLabel(data: Omit<Label, 'id' | 'createdAt' | 'isSystem'> & { isSystem?: boolean }) {
   const res = await fetch('/api/labels', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

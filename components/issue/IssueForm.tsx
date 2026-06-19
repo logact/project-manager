@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Trash2, Loader2, Copy, Check, Plus, Tag, X, Link, Archive, ArchiveRestore } from 'lucide-react'
+import { Trash2, Loader2, Copy, Check, Plus, Tag, X, Link, Archive, ArchiveRestore, Lock } from 'lucide-react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import MarkdownPreview from '../ui/MarkdownPreview'
@@ -14,7 +14,7 @@ import { useProjects, useProject } from '../../hooks/useProjects'
 import { useUsers } from '../../hooks/useUsers'
 import { useLabels, createLabel, deleteLabel } from '../../hooks/useLabels'
 import { cn } from '../../lib/utils'
-import type { IssueState, Priority } from '../../types'
+import type { IssueState, Priority, Label } from '../../types'
 
 const states: IssueState[] = ['backlog', 'todo', 'in_progress', 'done', 'canceled']
 const priorities: Priority[] = ['no_priority', 'low', 'medium', 'high', 'urgent']
@@ -643,15 +643,22 @@ export default function IssueForm({
                           style={{ backgroundColor: label.color }}
                         />
                         <span className="text-xs text-text">{label.name}</span>
+                        {(label as Label).isSystem && (
+                          <span title="System label">
+                            <Lock className="w-2.5 h-2.5 text-text-muted" />
+                          </span>
+                        )}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteLabel(label.id)}
-                        className="p-1 rounded text-text-muted hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
-                        title="Delete label"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      {!(label as Label).isSystem && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteLabel(label.id)}
+                          className="p-1 rounded text-text-muted hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Delete label"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   ))
                 )}

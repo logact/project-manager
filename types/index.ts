@@ -36,6 +36,7 @@ export interface Label {
   id: string
   name: string
   color: string
+  isSystem: boolean
   teamId: string
   createdAt: number
 }
