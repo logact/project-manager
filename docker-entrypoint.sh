@@ -21,4 +21,7 @@ if ! su-exec node ./node_modules/.bin/prisma migrate deploy; then
   su-exec node ./node_modules/.bin/prisma migrate deploy
 fi
 
+# Ensure system labels have correct colors
+su-exec node npx tsx prisma/seed.ts
+
 exec su-exec node node server.js
