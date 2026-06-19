@@ -20,8 +20,28 @@ async function backfillIssueOrder() {
   console.log(`Backfilled order for ${issuesNeedingOrder.length} existing issues.`)
 }
 
+async function ensureSystemLabels() {
+  const engineeringTeam = await prisma.team.findFirst({ where: { name: 'Engineering' } })
+  if (!engineeringTeam) return
+
+  const systemLabels = [
+    { name: 'Bug', color: '#d13b3b' },
+    { name: 'Feature', color: '#4da35a' },
+    { name: 'Refactor', color: '#8d6e63' },
+  ]
+
+  for (const { name, color } of systemLabels) {
+    await prisma.label.upsert({
+      where: { name_teamId: { name, teamId: engineeringTeam.id } },
+      update: { isSystem: true, color },
+      create: { id: crypto.randomUUID(), name, color, isSystem: true, teamId: engineeringTeam.id, createdAt: Date.now() },
+    })
+  }
+}
+
 async function main() {
   await backfillIssueOrder()
+  await ensureSystemLabels()
 
   const existing = await prisma.team.findFirst()
   if (existing) {
