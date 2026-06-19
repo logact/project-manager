@@ -21,7 +21,11 @@ if ! su-exec node ./node_modules/.bin/prisma migrate deploy; then
   su-exec node ./node_modules/.bin/prisma migrate deploy
 fi
 
-# Ensure system labels have correct colors
-su-exec node npx tsx prisma/seed.ts
+# Ensure system labels have correct colors and is_system flag
+sqlite3 "${DATA_DIR}/project-manager.db" "
+UPDATE \"Label\" SET \"is_system\" = 1, \"color\" = '#d13b3b' WHERE \"name\" = 'Bug';
+UPDATE \"Label\" SET \"is_system\" = 1, \"color\" = '#4da35a' WHERE \"name\" = 'Feature';
+UPDATE \"Label\" SET \"is_system\" = 1, \"color\" = '#8d6e63' WHERE \"name\" = 'Refactor';
+"
 
 exec su-exec node node server.js
