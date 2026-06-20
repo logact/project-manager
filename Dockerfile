@@ -15,7 +15,6 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 COPY . .
 RUN pnpm exec prisma generate
 
-ENV DATABASE_URL="file:/tmp/project-manager.db"
 RUN pnpm exec prisma migrate deploy
 RUN pnpm exec prisma db seed
 
